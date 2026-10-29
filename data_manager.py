@@ -1,3 +1,4 @@
+from app_survei import status_perkawinan
 import os
 import io
 import datetime
@@ -23,7 +24,7 @@ def is_gsheets_configured():
         if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
             cfg = st.secrets["connections"]["gsheets"]
             # Pastikan bukan default placeholder
-            if "spreadsheet" in cfg and "ID_SPREADSHEET_ANDA" not in cfg["spreadsheet"]:
+            if "spreadsheet" in cfg and "13tRTSmDoRLNbgcP53GxO-IN0a9AXNRyPiB1e2UBtFgw" not in cfg["spreadsheet"]:
                 return True
     except Exception:
         pass
@@ -93,6 +94,10 @@ def generate_sample_data(num_samples=24):
             "Rentang_Usia": random.choice(age_groups),
             "Masa_Kerja": random.choice(tenures),
             "Jabatan": random.choice(positions),
+            "Nama_Penyakit": "Tidak Ada",
+            "Berat_Badan": random.randint(50, 90),
+            "Tinggi_Badan": random.randint(150, 180),
+            "Status_Pernikahan": random.choice(status_perkawinan)
         }
 
         # Tambahkan skor per dimensi
