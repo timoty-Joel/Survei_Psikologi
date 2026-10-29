@@ -160,8 +160,32 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 2. STATE MANAGEMENT (SESSION STATE)
+# 2. KONFIGURASI KODE AKSES ADMIN & SESSION STATE
 # =====================================================================
+DEFAULT_ADMIN_CODE = "ADMIN2026"
+try:
+    ADMIN_ACCESS_CODE = str(st.secrets.get("ADMIN_CODE", DEFAULT_ADMIN_CODE)).strip()
+except Exception:
+    ADMIN_ACCESS_CODE = DEFAULT_ADMIN_CODE
+
+if "is_admin" not in st.session_state:
+    st.session_state["is_admin"] = False
+
+if "active_menu" not in st.session_state:
+    st.session_state["active_menu"] = "📝 Form Survei"
+
+# Dukungan akses langsung via query parameter (?code=... atau ?admin=...)
+try:
+    qp = st.query_params
+    url_code = qp.get("code") or qp.get("admin")
+    if url_code and str(url_code).strip() == ADMIN_ACCESS_CODE:
+        st.session_state["is_admin"] = True
+except Exception:
+    pass
+
+if "consent_given" not in st.session_state:
+    st.session_state["consent_given"] = False
+
 if "step" not in st.session_state:
     st.session_state["step"] = 0
 
@@ -172,7 +196,12 @@ if "biodata" not in st.session_state:
         "gender": "Laki-laki",
         "usia": "25 - 34 tahun",
         "masa_kerja": "1 - 3 tahun",
-        "jabatan": "Staf Pelaksana"
+        "jabatan": "Staf Pelaksana",
+        "riwayat_penyakit": "Tidak",
+        "nama_penyakit": "-",
+        "berat_badan": 60,
+        "tinggi_badan": 165,
+        "status_perkawinan": "Belum menikah"
     }
 
 if "answers" not in st.session_state:
@@ -182,33 +211,76 @@ if "submission_result" not in st.session_state:
     st.session_state["submission_result"] = None
 
 # =====================================================================
-# 3. SIDEBAR NAVIGATION & KONEKSI
+# 3. SIDEBAR NAVIGATION & KONTROL AKSES
 # =====================================================================
 with st.sidebar:
     st.markdown("### 🧠 Psikologi Kerja")
     st.markdown("<p style='font-size:12px; color:#64748b; margin-top:-10px;'>Sistem Penilaian Risiko Psikososial Kerja</p>", unsafe_allow_html=True)
     st.divider()
 
-    menu = st.radio(
-        "Pilih Menu:",
-        options=["📝 Form Survei", "📊 Dashboard Hasil Survei", "⚙️ Konfigurasi Spreadsheet"],
-        index=0
-    )
+    if st.session_state["is_admin"]:
+        # --- TAMPILAN KHUSUS ADMIN ---
+        st.markdown("<span class='badge-success' style='display:inline-block; margin-bottom:12px;'>👨‍💼 Mode Administrator</span>", unsafe_allow_html=True)
+        
+        admin_options = ["📊 Dashboard Hasil Survei", "📝 Form Survei", "⚙️ Konfigurasi Spreadsheet"]
+        current_idx = admin_options.index(st.session_state["active_menu"]) if st.session_state["active_menu"] in admin_options else 0
+        
+        menu = st.radio(
+            "Pilih Halaman:",
+            options=admin_options,
+            index=current_idx,
+            key="admin_menu_selector"
+        )
+        st.session_state["active_menu"] = menu
 
-    st.divider()
-    
-    # Status Penyimpanan
-    gsheet_active = is_gsheets_configured()
-    if gsheet_active:
-        st.markdown("**Status Penyimpanan:**")
-        st.markdown("<span class='badge-success'>🟢 Google Sheets Aktif</span>", unsafe_allow_html=True)
+        st.divider()
+        
+        # Status Penyimpanan (Hanya terlihat oleh Admin)
+        gsheet_active = is_gsheets_configured()
+        if gsheet_active:
+            st.markdown("**Status Penyimpanan:**")
+            st.markdown("<span class='badge-success'>🟢 Google Sheets Aktif</span>", unsafe_allow_html=True)
+        else:
+            st.markdown("**Status Penyimpanan:**")
+            st.markdown("<span class='badge-warning'>🟡 File Lokal (data_survei.csv)</span>", unsafe_allow_html=True)
+            st.caption("Google Sheets belum diatur di secrets.toml. Data tersimpan di file lokal.")
+
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+        if st.button("🚪 Logout Admin", use_container_width=True):
+            st.session_state["is_admin"] = False
+            st.session_state["active_menu"] = "📝 Form Survei"
+            st.rerun()
+
     else:
-        st.markdown("**Status Penyimpanan:**")
-        st.markdown("<span class='badge-warning'>🟡 File Lokal (data_survei.csv)</span>", unsafe_allow_html=True)
-        st.caption("Google Sheets belum diatur di secrets.toml. Data otomatis tersimpan aman di file lokal.")
+        # --- TAMPILAN UNTUK RESPONDEN BIASA ---
+        menu = "📝 Form Survei"
+        st.session_state["active_menu"] = "📝 Form Survei"
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    st.caption("Versi 1.0.0 | Standar Evaluasi K3 & Psikososial Kerja")
+        st.markdown("""
+        **📋 Informasi Pengisian:**
+        - Jawab setiap butir pernyataan secara jujur sesuai pengalaman kerja Anda.
+        - Identitas diri bersifat **rahasia / anonim**.
+        - Estimasi waktu: **5 - 7 menit**.
+        """)
+        
+        st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
+        st.divider()
+        
+        # Area Login Akses Admin
+        with st.expander("🔐 Akses Admin (Dashboard)"):
+            st.caption("Halaman dashboard dan konfigurasi dilindungi kode akses administrator.")
+            sidebar_code = st.text_input("Kode Akses Admin:", type="password", key="sidebar_admin_code_input")
+            if st.button("Buka Dashboard", use_container_width=True, type="primary"):
+                if sidebar_code.strip() == ADMIN_ACCESS_CODE:
+                    st.session_state["is_admin"] = True
+                    st.session_state["active_menu"] = "📊 Dashboard Hasil Survei"
+                    st.success("Kode benar! Membuka dashboard...")
+                    st.rerun()
+                else:
+                    st.error("❌ Kode akses salah.")
+
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+    st.caption("Versi 1.1.0 | Standar Evaluasi K3 & Psikososial Kerja")
 
 # =====================================================================
 # 4. HALAMAN 1: FORM SURVEI
@@ -222,16 +294,60 @@ if menu == "📝 Form Survei":
     st.markdown("""
     <div class="hero-banner">
         <h1>📋 Formulir Survei Psikologi Kerja</h1>
-        <p>Survei ini bertujuan untuk memetakan kondisi ergonomi, beban kerja, kepemimpinan, dan kesejahteraan psikologis karyawan di lingkungan kerja Anda.</p>
+        <p>Survei ini bertujuan untuk memetakan kondisi beban kerja, kepemimpinan, dan kesejahteraan psikologis karyawan di lingkungan kerja Anda.</p>
     </div>
     """, unsafe_allow_html=True)
 
     curr_step = st.session_state["step"]
 
     # -------------------------------------------------------------
+    # TAHAP 0: INFORMED CONSENT (LEMBAR PERSETUJUAN RESPONDEN)
+    # -------------------------------------------------------------
+    if not st.session_state.get("consent_given", False):
+        st.markdown("### 📑 Lembar Persetujuan Responden (Informed Consent)")
+        st.markdown("<p style='color:#64748b; font-size:14px; margin-top:-6px;'>Mohon membaca penjelasan dan ketentuan survei berikut sebelum memulai pengisian.</p>", unsafe_allow_html=True)
+
+        with st.container(border=True):
+            st.markdown("""
+            #### **Yth. Rekan Karyawan / Responden,**
+
+            Kami mengundang Anda untuk berpartisipasi dalam **Survei Evaluasi Risiko Psikososial Kerja**. Survei ini bertujuan untuk memetakan kondisi tuntutan kerja, organisasi kerja, hubungan kerja & kepemimpinan, kepuasan kerja, serta kesehatan dan kesejahteraan psikologis pegawai.
+
+            Sebelum melanjutkan, mohon perhatikan ketentuan etika dan kerahasiaan berikut:
+            
+            1. **Sifat Partisipasi Sukarela**: Partisipasi Anda dalam survei ini sepenuhnya bersifat **sukarela (voluntary)**. Anda berhak untuk menolak berpartisipasi atau menghentikan pengisian kapan saja tanpa dampak negatif maupun sanksi apa pun.
+            2. **Jaminan Kerahasiaan & Anonimitas**: Seluruh data dan jawaban yang Anda berikan bersifat **rahasia**. Identitas nama dapat diisi secara anonim / menggunakan inisial. Laporan dan analisis survei disajikan secara **agregat (kelompok)**, bukan untuk evaluasi kinerja personal individu.
+            3. **Tujuan Penggunaan Data**: Data yang terkumpul hanya akan digunakan untuk kepentingan evaluasi organisasi, pengembangan program Keselamatan dan Kesehatan Kerja (K3), serta perbaikan iklim lingkungan kerja.
+            4. **Waktu Pengisian**: Kuesioner ini dirancang ringkas dengan estimasi waktu pengisian sekitar **5 – 7 menit**.
+            5. **Objektivitas Respon**: Tidak ada penilaian benar atau salah. Kami sangat mengharapkan jawaban yang paling menggambarkan kondisi dan pengalaman kerja nyata Anda selama 3 bulan terakhir.
+            """)
+
+            st.divider()
+
+            st.markdown("#### **Pernyataan Persetujuan:**")
+            consent_check = st.checkbox(
+                "Saya telah membaca dan memahami seluruh penjelasan di atas, serta dengan ini MENYETUJUI secara sukarela untuk berpartisipasi sebagai responden dalam survei ini.",
+                key="consent_agreement_checkbox"
+            )
+
+        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        col_c1, col_c2 = st.columns([2, 1])
+        with col_c1:
+            if st.button("Saya Setuju & Lanjutkan ke Data Diri ➡️", type="primary", use_container_width=True):
+                if consent_check:
+                    st.session_state["consent_given"] = True
+                    st.session_state["step"] = 0
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Mohon centang kotak persetujuan di atas untuk dapat melanjutkan ke pengisian data diri.")
+        with col_c2:
+            if st.button("Tidak Bersedia", use_container_width=True):
+                st.info("Anda memilih untuk tidak melanjutkan. Terima kasih banyak atas waktu dan perhatian Anda. Anda dapat menutup tab peramban ini.")
+
+    # -------------------------------------------------------------
     # STEP 0: PENGISIAN DATA DIRI & BIDANG
     # -------------------------------------------------------------
-    if curr_step == 0:
+    elif curr_step == 0:
         st.markdown("### 👤 Langkah 1 dari 10: Pengisian Data Diri & Asal Bidang")
         st.info("Pilih asal bidang dan data diri Anda. Identitas nama/inisial dapat diisi dengan nama samaran/anonim jika diinginkan.")
 
@@ -255,6 +371,25 @@ if menu == "📝 Form Survei":
                     index=0 if st.session_state["biodata"]["gender"] == "Laki-laki" else 1,
                     horizontal=True
                 )
+                riwayat_input = st.radio("Apakah Anda mempunyai riwayat penyakit?", options=["Tidak", "Ya"],
+                                        index=0 if st.session_state["biodata"].get("riwayat_penyakit", "Tidak") == "Tidak" else 1,
+                                        horizontal=True)
+                
+                # Input kondisional 
+                nama_penyakit = "-"
+                if riwayat_input == "Ya":
+                    nama_penyakit = st.text_input("Jika iya, penyakit apa?", value="" if st.session_state["biodata"].get("nama_penyakit") == "-"
+                    else st.session_state["biodata"].get("nama_penyakit", ""),
+                    placeholder="Contoh: Asma, Asam Lambung, Hipertensi, dll.")
+                
+                # Berat badan & Tinggi badan
+                col_bb, col_tb = st.columns(2)
+                with col_bb:
+                    bb_input = st.number_input("Berat Badan (kg)", min_value=30, max_value=200,
+                                                value=int(st.session_state["biodata"].get("berat_badan", 60)), step=1)
+                with col_tb:
+                    tb_input = st.number_input("Tinggi Badan (cm)", min_value=100, max_value=220,
+                                                value=int(st.session_state["biodata"].get("tinggi_badan", 165)), step=1)
 
             with col2:
                 usia_options = ["< 25 tahun", "25 - 34 tahun", "35 - 44 tahun", "45 - 54 tahun", "≥ 55 tahun"]
@@ -275,17 +410,35 @@ if menu == "📝 Form Survei":
                     options=jabatan_options,
                     index=jabatan_options.index(st.session_state["biodata"]["jabatan"]) if st.session_state["biodata"]["jabatan"] in jabatan_options else 0
                 )
+                status_perkawinan = ["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"]
+                status_perkawinan = st.selectbox(
+                    "Status Pernikahan",
+                    options = status_perkawinan,
+                    index = status_perkawinan.index(st.session_state["biodata"]["status_perkawinan"]) if st.session_state["biodata"]["status_perkawinan"] in status_perkawinan else 0
+                )
 
         st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-        if st.button("Mulai Mengisi Survei ➡️", type="primary", use_container_width=True):
-            st.session_state["biodata"]["bidang"] = selected_bidang
-            st.session_state["biodata"]["nama"] = nama_input.strip() if nama_input.strip() else "Anonim"
-            st.session_state["biodata"]["gender"] = gender_input
-            st.session_state["biodata"]["usia"] = usia_input
-            st.session_state["biodata"]["masa_kerja"] = masa_kerja_input
-            st.session_state["biodata"]["jabatan"] = jabatan_input
-            st.session_state["step"] = 1
-            st.rerun()
+        col_b1, col_b2 = st.columns([1, 2])
+        with col_b1:
+            if st.button("⬅️ Lembar Persetujuan", use_container_width=True):
+                st.session_state["consent_given"] = False
+                st.rerun()
+        with col_b2:
+            if st.button("Mulai Mengisi Kuesioner ➡️", type="primary", use_container_width=True):
+                st.session_state["biodata"]["bidang"] = selected_bidang
+                st.session_state["biodata"]["nama"] = nama_input.strip() if nama_input.strip() else "Anonim"
+                st.session_state["biodata"]["gender"] = gender_input
+                st.session_state["biodata"]["usia"] = usia_input
+                st.session_state["biodata"]["masa_kerja"] = masa_kerja_input
+                st.session_state["biodata"]["jabatan"] = jabatan_input
+                st.session_state["biodata"]["riwayat_penyakit"] = riwayat_input
+                st.session_state["biodata"]["nama_penyakit"] = nama_penyakit.strip() if nama_penyakit.strip() else "-"
+                st.session_state["biodata"]["berat_badan"] = bb_input
+                st.session_state["biodata"]["tinggi_badan"] = tb_input
+                st.session_state["biodata"]["status_perkawinan"] = status_perkawinan
+                st.session_state["step"] = 1
+                st.rerun()
+
 
     # -------------------------------------------------------------
     # STEP 1 s/d 8: PENGISIAN 8 KATEGORI SURVEI
@@ -425,7 +578,7 @@ if menu == "📝 Form Survei":
                 total_q = sum(len(qs) for qs in SURVEY_QUESTIONS.values())
                 answered_q = len(st.session_state["answers"])
                 st.metric("Total Pertanyaan Terjawab", f"{answered_q} / {total_q}", "100% Lengkap")
-                st.caption("Semua 8 dimensi ergonomi & psikologi telah siap diproses dan dikirim ke basis data.")
+                st.caption("Semua 8 dimensi psikologi telah siap diproses dan dikirim ke basis data.")
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
         col_back, col_submit = st.columns([1, 2])
@@ -489,13 +642,14 @@ if menu == "📝 Form Survei":
                 fig_radar.update_layout(
                     polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
                     showlegend=False,
-                    title="Grafik Radar Profil Psikososial & Ergonomi Anda",
+                    title="Grafik Radar Profil Psikososial Anda",
                     margin=dict(l=40, r=40, t=50, b=40),
                     height=380
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
 
         if st.button("📝 Isi Survei untuk Responden Baru", use_container_width=True):
+            st.session_state["consent_given"] = False
             st.session_state["step"] = 0
             st.session_state["answers"] = {}
             st.session_state["submission_result"] = None
@@ -506,13 +660,29 @@ if menu == "📝 Form Survei":
 # =====================================================================
 elif menu == "📊 Dashboard Hasil Survei":
     
+    # Verifikasi Hak Akses Admin
+    if not st.session_state.get("is_admin", False):
+        st.error("🔒 Akses Ditolak: Halaman Dashboard rekapitulasi hanya dapat diakses oleh Administrator.")
+        with st.container(border=True):
+            st.markdown("### 🔐 Masukkan Kode Akses Admin")
+            st.write("Silakan masukkan kode akses administrator untuk membuka dashboard hasil survei dan rekapitulasi data responden.")
+            direct_code = st.text_input("Kode Akses Administrator:", type="password", key="direct_login_code_dashboard")
+            if st.button("Buka Dashboard Sekarang", type="primary"):
+                if direct_code.strip() == ADMIN_ACCESS_CODE:
+                    st.session_state["is_admin"] = True
+                    st.session_state["active_menu"] = "📊 Dashboard Hasil Survei"
+                    st.rerun()
+                else:
+                    st.error("❌ Kode akses yang Anda masukkan salah.")
+        st.stop()
+    
     # Load dataset
     df, source_info = load_data()
 
     # Header Dashboard
     st.markdown(f"""
     <div class="hero-banner">
-        <h1>📊 Dashboard Analisis Ergonomi & Psikologi Kerja</h1>
+        <h1>📊 Dashboard Analisis Psikologi Kerja</h1>
         <p>Visualisasi rekapitulasi skor per bidang kerja, profil dimensi psikososial, dan analisis risiko kesehatan kerja.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -626,7 +796,7 @@ elif menu == "📊 Dashboard Hasil Survei":
 
         with col_g1:
             with st.container(border=True):
-                st.markdown("#### 🕸️ Profil Rata-Rata 8 Dimensi Psikososial & Ergonomi")
+                st.markdown("#### 🕸️ Profil Rata-Rata 8 Dimensi Psikososial")
                 st.caption("Diagram radar menunjukkan keseimbangan antara aspek tuntutan kerja, sumber daya kerja, dan status kesehatan.")
 
                 dim_names = [CATEGORY_METADATA[k]["short"] for k in categories_list]
@@ -681,7 +851,7 @@ elif menu == "📊 Dashboard Hasil Survei":
                     color_map = {
                         "Keselamatan Kerja": "#ef4444",
                         "Kesehatan Kerja": "#10b981",
-                        "Ergonomi & Psikologi": "#3b82f6",
+                        "Psikologi": "#3b82f6",
                         "Hiegene Industri dan Bahan Berbahaya": "#f59e0b"
                     }
 
@@ -708,7 +878,7 @@ elif menu == "📊 Dashboard Hasil Survei":
         # -------------------------------------------------------------
         with st.container(border=True):
             st.markdown("#### 📊 Perbandingan Rata-Rata Dimensi Antara 4 Bidang Kerja")
-            st.caption("Menganalisis disparitas kondisi kerja antar bidang (Keselamatan Kerja, Kesehatan Kerja, Ergonomi & Psikologi, Hiegene Industri).")
+            st.caption("Menganalisis disparitas kondisi kerja antar bidang (Keselamatan Kerja, Kesehatan Kerja, Psikologi, Hiegene Industri).")
 
             # Hitung rata-rata per bidang
             comparison_rows = []
@@ -736,7 +906,7 @@ elif menu == "📊 Dashboard Hasil Survei":
                     color_discrete_map={
                         "Keselamatan Kerja": "#ef4444",
                         "Kesehatan Kerja": "#10b981",
-                        "Ergonomi & Psikologi": "#3b82f6",
+                        "Psikologi": "#3b82f6",
                         "Hiegene Industri dan Bahan Berbahaya": "#f59e0b"
                     },
                     text="Skor"
@@ -847,6 +1017,11 @@ elif menu == "📊 Dashboard Hasil Survei":
 # 6. HALAMAN 3: PENGATURAN & GOOGLE SHEETS
 # =====================================================================
 elif menu == "⚙️ Konfigurasi Spreadsheet":
+    
+    # Verifikasi Hak Akses Admin
+    if not st.session_state.get("is_admin", False):
+        st.error("🔒 Akses Ditolak: Halaman Konfigurasi Spreadsheet hanya dapat diakses oleh Administrator.")
+        st.stop()
     st.markdown("""
     <div class="hero-banner">
         <h1>⚙️ Integrasi Google Spreadsheet & Pengaturan</h1>

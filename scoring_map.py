@@ -45,7 +45,7 @@ def calculate_score(code, answer):
             return None
     return None
 
-BIDANG_OPTIONS = ["Keselamatan Kerja", "Kesehatan Kerja", "Ergonomi & Psikologi", "Hiegene Industri dan Bahan Berbahaya"]
+BIDANG_OPTIONS = ["Keselamatan Kerja", "Kesehatan Kerja", "Ergonomi & Psikologi", "Hiegene Industri dan Bahan Berbahaya", "Tata Usaha"]
 
 # questions
 SURVEY_QUESTIONS = {
@@ -219,49 +219,49 @@ CATEGORY_METADATA = {
         "label": "Tuntutan Pekerjaan",
         "short": "Tuntutan Kerja",
         "icon": "⏳",
-        "desc": "Mengukur beban kerja kuantitatif, tempo/kecepatan kerja, tuntutan kognitif, serta keterlibatan emosional."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan tuntutan yang Anda hadapi dalam pekerjaan, seperti beban kerja, kecepatan kerja, tuntutan kognitif, dan tuntutan emosional. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "PENGORGANISASIAN KERJA DAN ISI PEKERJAAN": {
         "label": "Pengorganisasian & Isi Kerja",
         "short": "Organisasi Kerja",
         "icon": "📋",
-        "desc": "Mengukur pengaruh kerja, otonomi, kesempatan pengembangan kemampuan, dan makna pekerjaan."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan pengaturan kerja dan karakteristik pekerjaan Anda, seperti kejelasan tugas, kesempatan mengembangkan keterampilan, serta pengaruh dan keleluasaan dalam pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "HUBUNGAN ANTARPRIBADI DAN KEPEMIMPINAN": {
         "label": "Hubungan Antarpribadi & Kepemimpinan",
         "short": "Hubungan & Pemimpin",
         "icon": "🤝",
-        "desc": "Mengukur kejelasan peran, penghargaan, kualitas kepemimpinan atasan, serta dukungan sosial rekan kerja."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan Anda dengan rekan kerja dan atasan serta kepemimpinan di lingkungan kerja. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "ANTARMUKA KERJA INDIVIDU": {
         "label": "Antarmuka Kerja Individu",
         "short": "Antarmuka Kerja",
         "icon": "💼",
-        "desc": "Mengukur komitmen organisasi, keterikatan kerja, ketidakpastian kerja, kepuasan kerja, dan konflik kerja-keluarga."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan antara pekerjaan dan kehidupan pribadi Anda, termasuk bagaimana pekerjaan memengaruhi kehidupan di luar pekerjaan dan sebaliknya. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "MODAL SOSIAL": {
         "label": "Modal Sosial",
         "short": "Modal Sosial",
         "icon": "🏛️",
-        "desc": "Mengukur rasa saling percaya di tempat kerja, keterbukaan informasi, dan keadilan organisasi."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kepercayaan, kerja sama, dan hubungan sosial di lingkungan kerja, termasuk bagaimana pegawai saling mendukung dalam mencapai tujuan bersama. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "KONFLIK DAN PERILAKU OFENSIF": {
         "label": "Konflik & Perilaku Ofensif",
         "short": "Konflik & Ofensif",
         "icon": "⚠️",
-        "desc": "Mengukur insiden perilaku tidak menyenangkan seperti gosip, konflik, ejekan, perundungan, hingga kekerasan."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan konflik dan perilaku tidak menyenangkan yang mungkin Anda alami atau temui di lingkungan kerja, seperti perlakuan yang tidak pantas, pelecehan, atau tindakan lain yang membuat Anda merasa tidak nyaman. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada pengalaman Anda di lingkungan kerja selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "HEALTH AND WELL-BEING": {
         "label": "Kesehatan & Kesejahteraan (Health & Well-Being)",
         "short": "Kesehatan & Well-being",
         "icon": "❤️",
-        "desc": "Mengukur kesehatan umum, kualitas tidur, kelelahan fisik/emosional, stres, gejala somatik, dan suasana hati."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kondisi kesehatan dan kesejahteraan Anda, termasuk kondisi fisik, psikologis, dan perasaan yang berkaitan dengan pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "PERSONALITY/KEPRIBADIAN": {
         "label": "Kepribadian & Efikasi Diri (Self-Efficacy)",
         "short": "Kepribadian & Efikasi",
         "icon": "🎯",
-        "desc": "Mengukur efikasi diri umum dan keyakinan individu dalam mengatasi tantangan serta hambatan pekerjaan."
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan karakteristik dan kecenderungan kepribadian Anda, termasuk bagaimana Anda biasanya berpikir, merasakan, dan berperilaku dalam berbagai situasi. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada gambaran diri Anda yang paling sesuai. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     }
 }
 
@@ -305,4 +305,4 @@ def calculate_category_scores(answers):
             category_scores[category] = 0.0
             
     overall_avg = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
-    return category_scores, overall_avg
+    return category_scores, overall_avg

@@ -170,6 +170,11 @@ def save_survey_response(biodata, answers):
         "Rentang_Usia": biodata.get("usia", ""),
         "Masa_Kerja": biodata.get("masa_kerja", ""),
         "Jabatan": biodata.get("jabatan", ""),
+        "Riwayat_Penyakit": biodata.get("riwayat_penyakit", "Tidak"),
+        "Nama_Penyakit": biodata.get("nama_penyakit", "-"),
+        "Berat_Badan": biodata.get("berat_badan", 0),
+        "Tinggi_Badan": biodata.get("tinggi_badan", 0),
+        "Status_Perkawinan": biodata.get("status_perkawinan", 0)
     }
 
     # Skor dimensi
