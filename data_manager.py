@@ -1,4 +1,3 @@
-from app_survei import status_perkawinan
 import os
 import io
 import datetime
@@ -15,6 +14,8 @@ from scoring_map import (
     calculate_score,
     calculate_category_scores
 )
+from scoring_map import CATEGORY_METADATA
+from scoring_map import calculate_score
 
 LOCAL_DATA_FILE = "data_survei.csv"
 
@@ -24,7 +25,7 @@ def is_gsheets_configured():
         if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
             cfg = st.secrets["connections"]["gsheets"]
             # Pastikan bukan default placeholder
-            if "spreadsheet" in cfg and "13tRTSmDoRLNbgcP53GxO-IN0a9AXNRyPiB1e2UBtFgw" not in cfg["spreadsheet"]:
+            if "spreadsheet" in cfg and "ID_SPREADSHEET_ANDA" not in cfg["spreadsheet"]:
                 return True
     except Exception:
         pass
@@ -97,7 +98,7 @@ def generate_sample_data(num_samples=24):
             "Nama_Penyakit": "Tidak Ada",
             "Berat_Badan": random.randint(50, 90),
             "Tinggi_Badan": random.randint(150, 180),
-            "Status_Pernikahan": random.choice(status_perkawinan)
+            "Status_Pernikahan": random.choice(["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"])
         }
 
         # Tambahkan skor per dimensi
@@ -124,7 +125,7 @@ def load_data():
     conn = get_gsheets_connection()
     if conn is not None:
         try:
-            df_gsheet = conn.read(ttl="0m")
+            df_gsheet = conn.read(worksheet="Data_Responden", ttl="0m")
             if df_gsheet is not None and not df_gsheet.empty:
                 # Pastikan kolom numerik terformat dengan benar
                 for col in DIMENSION_COLUMNS.values():
@@ -214,7 +215,7 @@ def save_survey_response(biodata, answers):
     if conn is not None:
         try:
             try:
-                existing_gsheet = conn.read(ttl="0m")
+                existing_gsheet = conn.read(worksheet="Data_Responden", ttl="0m")
                 if existing_gsheet is not None and not existing_gsheet.empty:
                     updated_gsheet = pd.concat([existing_gsheet, df_new_row], ignore_index=True)
                 else:
@@ -222,7 +223,7 @@ def save_survey_response(biodata, answers):
             except Exception:
                 updated_gsheet = df_new_row
 
-            conn.update(data=updated_gsheet)
+            conn.update(worksheet="Data_Responden", data=updated_gsheet)
             gsheet_saved = True
         except Exception as e:
             print(f"Error saving to Google Sheets: {e}")

@@ -14,6 +14,9 @@ from scoring_map import (
     calculate_score,
     calculate_category_scores
 )
+
+from scoring_map import(calculate_score, calculate_category_scores)
+
 from data_manager import (
     load_data,
     save_survey_response,
