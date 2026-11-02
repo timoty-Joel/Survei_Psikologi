@@ -306,3 +306,168 @@ def calculate_category_scores(answers):
             
     overall_avg = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0.0
     return category_scores, overall_avg
+
+# =====================================================================
+# KONFIGURASI SEGMEN 2: KESEHATAN MENTAL (DASS-21)
+# =====================================================================
+SEGMEN2_OPTIONS = [
+    "0 - Tidak sesuai dengan diri saya",
+    "1 - Sesuai dengan diri pada tingkat tertentu",
+    "2 - Sesuai dengan diri saya pada tingkat yang cukup besar",
+    "3 - Sangat sesuai dengan diri saya"
+]
+
+SCORING_MAP_SEGMEN2 = {
+    "0 - Tidak sesuai dengan diri saya": 0,
+    "1 - Sesuai dengan diri pada tingkat tertentu": 1,
+    "2 - Sesuai dengan diri saya pada tingkat yang cukup besar": 2,
+    "3 - Sangat sesuai dengan diri saya": 3,
+    "0 = Tidak sesuai dengan diri saya": 0,
+    "1 = Sesuai dengan diri pada tingkat tertentu": 1,
+    "2 = Sesuai dengan diri saya pada tingkat yang cukup besar": 2,
+    "3 = Sangat sesuai dengan diri saya": 3,
+    "Tidak sesuai dengan diri saya": 0,
+    "Sesuai dengan diri pada tingkat tertentu": 1,
+    "Sesuai dengan diri saya pada tingkat yang cukup besar": 2,
+    "Sangat sesuai dengan diri saya": 3,
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3
+}
+
+SURVEY_QUESTIONS_SEGMEN2 = {
+    "Tingkat Energi dan Suasana Hati": [
+        {"id": "D1", "text": "Saya sama sekali tidak dapat merasakan perasaan positif (contoh: merasa gembira, bangga, dsb)."},
+        {"id": "D2", "text": "Saya merasa sulit berinisiatif melakukan sesuatu."},
+        {"id": "D3", "text": "Saya merasa tidak ada lagi yang bisa saya harapkan."},
+        {"id": "D4", "text": "Saya merasa sedih dan tertekan."},
+        {"id": "D5", "text": "Saya tidak bisa merasa antusias terhadap hal apapun."},
+        {"id": "D6", "text": "Saya merasa diri saya tidak berharga."},
+        {"id": "D7", "text": "Saya merasa hidup ini tidak berarti."}
+    ],
+    "Respons Fisik dan  tingkat Kenyamanan Situasional": [
+        {"id": "K1", "text": "Saya merasa rongga mulut saya kering."},
+        {"id": "K2", "text": "Saya merasa kesulitan bernafas (misalnya seringkali terengah-engah atau tidak dapat bernapas padahal tidak melakukan aktivitas fisik sebelumnya)."},
+        {"id": "K3", "text": "Saya merasa gemetar (misalnya pada tangan)."},
+        {"id": "K4", "text": "Saya merasa khawatir dengan situasi dimana saya mungkin menjadi panik dan mempermalukan diri sendiri."},
+        {"id": "K5", "text": "Saya merasa hampir panik."},
+        {"id": "K6", "text": "Saya menyadari kondisi jantung saya (seperti meningkatnya atau melemahnya detak jantung) meskipun sedang tidak melakukan aktivitas fisik."},
+        {"id": "K7", "text": "Saya merasa ketakutan tanpa alasan yang jelas."}
+    ],
+    "Pengelolaan Tekanan atau Ketegangan Kerja": [
+        {"id": "S1", "text": "Saya merasa sulit untuk beristirahat."},
+        {"id": "S2", "text": "Saya cenderung menunjukkan reaksi berlebihan terhadap suatu situasi."},
+        {"id": "S3", "text": "Saya merasa energi saya terkuras karena terlalu cemas."},
+        {"id": "S4", "text": "Saya merasa gelisah."},
+        {"id": "S5", "text": "Saya merasa sulit untuk merasa tenang."},
+        {"id": "S6", "text": "Saya sulit untuk bersabar dalam menghadapi gangguan yang terjadi ketika sedang melakukan sesuatu."},
+        {"id": "S7", "text": "Perasaan saya mudah tergugah atau tersentuh."}
+    ]
+}
+
+CATEGORY_METADATA_SEGMEN2 = {
+    "Tingkat Energi dan Suasana Hati": {
+        "label": "Tingkat Energi dan Suasana Hati (Depression)",
+        "short": "Depresi",
+        "icon": "🌧️",
+        "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan suasana hati dan perasaan sedih atau kehilangan minat. Nilailah seberapa sesuai dengan kondisi Anda."
+    },
+    "Respons Fisik dan  tingkat Kenyamanan Situasional": {
+        "label": "Respons Fisik dan  tingkat Kenyamanan Situasional (Anxiety)",
+        "short": "Kecemasan",
+        "icon": "⚡",
+        "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan reaksi kecemasan, kegugupan, dan ketakutan fisik tubuh. Nilailah seberapa sesuai dengan kondisi Anda."
+    },
+    "Pengelolaan Tekanan atau Ketegangan Kerja": {
+        "label": "Pengelolaan Tekanan atau Ketegangan Kerja (Stress)",
+        "short": "Stress",
+        "icon": "🔥",
+        "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan ketegangan fisik/emosional dan iritabilitas. Nilailah seberapa sesuai dengan kondisi Anda."
+    }
+}
+
+DIMENSION_COLUMNS_SEGMEN2 = {
+    "Tingkat Energi dan Suasana Hatresi": "Skor_Segmen2_Depresi",
+    "Respons Fisik dan  tingkat Kenyamanan Situasionalasan": "Skor_Segmen2_Kecemasan",
+    "Pengelolaan Tekanan atau Ketegangan Kerja": "Skor_Segmen2_Stress"
+}
+
+def calculate_score_segmen2(answer):
+    """Menghitung skor numerik (0-3) untuk butir pertanyaan Segmen 2"""
+    if answer is None:
+        return None
+    ans_str = str(answer).strip()
+    if ans_str in SCORING_MAP_SEGMEN2:
+        return SCORING_MAP_SEGMEN2[ans_str]
+    if len(ans_str) > 0 and ans_str[0] in ("0", "1", "2", "3"):
+        return int(ans_str[0])
+    return None
+
+def get_dass_severity(dimension, score):
+    """
+    Menentukan tingkat keparahan DASS-21 berdasarkan skor total dimensi (0-21):
+    Normal, Ringan, Sedang, Parah, Sangat Parah
+    """
+    if score is None:
+        return "Normal"
+    if dimension == "Tingkat Energi dan Suasana Hati":
+        if score <= 4:
+            return "Normal"
+        elif score <= 6:
+            return "Ringan"
+        elif score <= 10:
+            return "Sedang"
+        elif score <= 13:
+            return "Parah"
+        else:
+            return "Sangat Parah"
+    elif dimension == "Respons Fisik dan  tingkat Kenyamanan Situasional":
+        if score <= 3:
+            return "Normal"
+        elif score <= 5:
+            return "Ringan"
+        elif score <= 7:
+            return "Sedang"
+        elif score <= 9:
+            return "Parah"
+        else:
+            return "Sangat Parah"
+    elif dimension == "Pengelolaan Tekanan atau Ketegangan Kerja":
+        if score <= 7:
+            return "Normal"
+        elif score <= 9:
+            return "Ringan"
+        elif score <= 12:
+            return "Sedang"
+        elif score <= 16:
+            return "Parah"
+        else:
+            return "Sangat Parah"
+    return "Normal"
+
+def calculate_segmen2_scores(answers_segmen2):
+    """
+    Menghitung skor per dimensi untuk Segmen 2 (Total poin 0-21 per dimensi),
+    total skor Segmen 2 (0-63), dan tingkat keparahan DASS-21.
+    """
+    dimension_scores = {}
+    severity_levels = {}
+    all_scores = []
+
+    for dim, questions in SURVEY_QUESTIONS_SEGMEN2.items():
+        dim_scores = []
+        for q in questions:
+            qid = q["id"]
+            ans = answers_segmen2.get(qid) if answers_segmen2 else None
+            score = calculate_score_segmen2(ans)
+            if score is not None:
+                dim_scores.append(score)
+                all_scores.append(score)
+
+        total_dim = sum(dim_scores) if dim_scores else 0
+        dimension_scores[dim] = total_dim
+        severity_levels[dim] = get_dass_severity(dim, total_dim)
+
+    total_segmen2 = sum(all_scores) if all_scores else 0
+    return dimension_scores, total_segmen2, severity_levels

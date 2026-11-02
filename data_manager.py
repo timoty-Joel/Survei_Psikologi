@@ -12,10 +12,18 @@ from scoring_map import (
     CATEGORY_METADATA,
     get_question_options,
     calculate_score,
-    calculate_category_scores
+    calculate_category_scores,
+    SEGMEN2_OPTIONS,
+    SCORING_MAP_SEGMEN2,
+    SURVEY_QUESTIONS_SEGMEN2,
+    CATEGORY_METADATA_SEGMEN2,
+    DIMENSION_COLUMNS_SEGMEN2,
+    calculate_score_segmen2,
+    calculate_segmen2_scores,
+    get_dass_severity
 )
-from scoring_map import CATEGORY_METADATA
-from scoring_map import calculate_score
+
+from scoring_map import calculate_score_segmen2, get_dass_severity, SCORING_MAP_SEGMEN2, CATEGORY_METADATA_SEGMEN2
 
 LOCAL_DATA_FILE = "data_survei.csv"
 
@@ -86,6 +94,14 @@ def generate_sample_data(num_samples=24):
 
         cat_scores, overall_score = calculate_category_scores(dummy_answers)
 
+        # Buat jawaban dummy untuk Segmen 2
+        dummy_seg2_answers = {}
+        for dim, qs in SURVEY_QUESTIONS_SEGMEN2.items():
+            for q in qs:
+                dummy_seg2_answers[q["id"]] = random.choice(SEGMEN2_OPTIONS)
+        
+        seg2_scores, seg2_total, seg2_severity = calculate_segmen2_scores(dummy_seg2_answers)
+
         record = {
             "ID_Responden": f"RSP-{i+1:04d}",
             "Waktu_Pengisian": created_time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -95,19 +111,31 @@ def generate_sample_data(num_samples=24):
             "Rentang_Usia": random.choice(age_groups),
             "Masa_Kerja": random.choice(tenures),
             "Jabatan": random.choice(positions),
+            "Riwayat_Penyakit": "Tidak",
             "Nama_Penyakit": "Tidak Ada",
             "Berat_Badan": random.randint(50, 90),
             "Tinggi_Badan": random.randint(150, 180),
             "Status_Pernikahan": random.choice(["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"])
         }
 
-        # Tambahkan skor per dimensi
+        # Tambahkan skor per dimensi Segmen 1
         for cat, col_name in DIMENSION_COLUMNS.items():
             record[col_name] = cat_scores.get(cat, 50.0)
         record["Skor_Rata_Rata_Total"] = overall_score
 
-        # Tambahkan butir jawaban individual
+        # Tambahkan skor per dimensi Segmen 2
+        for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
+            record[col_name] = seg2_scores.get(dim, 0)
+        record["Total_Skor_Segmen2"] = seg2_total
+        for dim, sev in seg2_severity.items():
+            record[f"Tingkat_{dim}"] = sev
+
+        # Tambahkan butir jawaban individual Segmen 1
         for qid, ans in dummy_answers.items():
+            record[qid] = ans
+
+        # Tambahkan butir jawaban individual Segmen 2
+        for qid, ans in dummy_seg2_answers.items():
             record[qid] = ans
 
         records.append(record)
@@ -133,6 +161,11 @@ def load_data():
                         df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
                 if "Skor_Rata_Rata_Total" in df_gsheet.columns:
                     df_gsheet["Skor_Rata_Rata_Total"] = pd.to_numeric(df_gsheet["Skor_Rata_Rata_Total"], errors="coerce").fillna(0)
+                for col in DIMENSION_COLUMNS_SEGMEN2.values():
+                    if col in df_gsheet.columns:
+                        df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
+                if "Total_Skor_Segmen2" in df_gsheet.columns:
+                    df_gsheet["Total_Skor_Segmen2"] = pd.to_numeric(df_gsheet["Total_Skor_Segmen2"], errors="coerce").fillna(0)
                 return df_gsheet, "Google Sheets"
         except Exception as e:
             st.sidebar.warning(f"Gagal membaca Google Sheets ({e}), beralih ke penyimpanan lokal.")
@@ -147,6 +180,11 @@ def load_data():
                         df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
                 if "Skor_Rata_Rata_Total" in df_local.columns:
                     df_local["Skor_Rata_Rata_Total"] = pd.to_numeric(df_local["Skor_Rata_Rata_Total"], errors="coerce").fillna(0)
+                for col in DIMENSION_COLUMNS_SEGMEN2.values():
+                    if col in df_local.columns:
+                        df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
+                if "Total_Skor_Segmen2" in df_local.columns:
+                    df_local["Total_Skor_Segmen2"] = pd.to_numeric(df_local["Total_Skor_Segmen2"], errors="coerce").fillna(0)
                 return df_local, "File Lokal (data_survei.csv)"
         except Exception:
             pass
@@ -156,15 +194,21 @@ def load_data():
     sample_df.to_csv(LOCAL_DATA_FILE, index=False)
     return sample_df, "Sample Awal (data_survei.csv)"
 
-def save_survey_response(biodata, answers):
+def save_survey_response(biodata, answers, answers_segmen2=None):
     """
-    Menyimpan respons responden ke file lokal dan Google Sheets jika aktif.
+    Menyimpan respons responden (Segmen 1 & Segmen 2) ke file lokal dan Google Sheets jika aktif.
     """
+    if answers_segmen2 is None:
+        answers_segmen2 = {}
+
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     id_resp = f"RSP-{random.randint(1000, 9999)}"
 
-    # Hitung skor per kategori
+    # Hitung skor per kategori Segmen 1
     cat_scores, overall_avg = calculate_category_scores(answers)
+
+    # Hitung skor Segmen 2
+    seg2_scores, seg2_total, seg2_severity = calculate_segmen2_scores(answers_segmen2)
 
     # Susun dict rekaman data lengkap
     record = {
@@ -180,19 +224,32 @@ def save_survey_response(biodata, answers):
         "Nama_Penyakit": biodata.get("nama_penyakit", "-"),
         "Berat_Badan": biodata.get("berat_badan", 0),
         "Tinggi_Badan": biodata.get("tinggi_badan", 0),
-        "Status_Perkawinan": biodata.get("status_perkawinan", 0)
+        "Status_Perkawinan": biodata.get("status_perkawinan", "-")
     }
 
-    # Skor dimensi
+    # Skor dimensi Segmen 1
     for cat, col_name in DIMENSION_COLUMNS.items():
         record[col_name] = cat_scores.get(cat, 0.0)
     record["Skor_Rata_Rata_Total"] = overall_avg
 
-    # Jawaban individual per butir pertanyaan
+    # Skor dimensi Segmen 2
+    for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
+        record[col_name] = seg2_scores.get(dim, 0)
+    record["Total_Skor_Segmen2"] = seg2_total
+    for dim, sev in seg2_severity.items():
+        record[f"Tingkat_{dim}"] = sev
+
+    # Jawaban individual per butir pertanyaan Segmen 1
     for cat, qs in SURVEY_QUESTIONS.items():
         for q in qs:
             qid = q["id"]
             record[qid] = answers.get(qid, "")
+
+    # Jawaban individual per butir pertanyaan Segmen 2
+    for dim, qs in SURVEY_QUESTIONS_SEGMEN2.items():
+        for q in qs:
+            qid = q["id"]
+            record[qid] = answers_segmen2.get(qid, "")
 
     df_new_row = pd.DataFrame([record])
 
@@ -234,6 +291,9 @@ def save_survey_response(biodata, answers):
         "gsheet_saved": gsheet_saved,
         "cat_scores": cat_scores,
         "overall_score": overall_avg,
+        "seg2_scores": seg2_scores,
+        "seg2_total": seg2_total,
+        "seg2_severity": seg2_severity,
         "id_responden": id_resp
     }
 
