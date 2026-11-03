@@ -10,9 +10,13 @@ from scoring_map import (
     SURVEY_QUESTIONS,
     DIMENSION_COLUMNS,
     CATEGORY_METADATA,
+    SUBDIMENSIONS_BY_CATEGORY,
+    SUBDIMENSION_COLUMNS,
     get_question_options,
     calculate_score,
     calculate_category_scores,
+    calculate_subdimension_scores,
+    compute_subdimensions_for_df,
     SEGMEN2_OPTIONS,
     SCORING_MAP_SEGMEN2,
     SURVEY_QUESTIONS_SEGMEN2,
@@ -22,8 +26,6 @@ from scoring_map import (
     calculate_segmen2_scores,
     get_dass_severity
 )
-
-from scoring_map import calculate_score_segmen2, get_dass_severity, SCORING_MAP_SEGMEN2, CATEGORY_METADATA_SEGMEN2
 
 LOCAL_DATA_FILE = "data_survei.csv"
 
@@ -72,7 +74,7 @@ def generate_sample_data(num_samples=24):
         bidang = BIDANG_OPTIONS[i % len(BIDANG_OPTIONS)]
         created_time = base_time + datetime.timedelta(days=i * 0.5, hours=random.randint(1, 8))
         
-        # Buat jawaban dummy untuk setiap pertanyaan
+        # Buat jawaban dummy untuk setiap pertanyaan Segmen 1
         dummy_answers = {}
         for cat, qs in SURVEY_QUESTIONS.items():
             for q in qs:
@@ -80,19 +82,17 @@ def generate_sample_data(num_samples=24):
                 code = q["code"]
                 opts = get_question_options(code)
                 if code == "5M":
-                    # Pelaku ofensif
                     dummy_answers[qid] = random.choice(opts)
                 elif code == "8":
-                    # Nilai kesehatan 0-10
                     dummy_answers[qid] = str(random.randint(6, 10))
                 else:
                     if opts:
-                        # Pilih opsi condong ke nilai baik/sedang
                         dummy_answers[qid] = random.choice(opts)
                     else:
                         dummy_answers[qid] = "-"
 
         cat_scores, overall_score = calculate_category_scores(dummy_answers)
+        sub_scores = calculate_subdimension_scores(dummy_answers)
 
         # Buat jawaban dummy untuk Segmen 2
         dummy_seg2_answers = {}
@@ -122,6 +122,10 @@ def generate_sample_data(num_samples=24):
         for cat, col_name in DIMENSION_COLUMNS.items():
             record[col_name] = cat_scores.get(cat, 50.0)
         record["Skor_Rata_Rata_Total"] = overall_score
+
+        # Tambahkan skor per sub-dimensi Segmen 1
+        for sub_name, col_name in SUBDIMENSION_COLUMNS.items():
+            record[col_name] = sub_scores.get(sub_name, 50.0)
 
         # Tambahkan skor per dimensi Segmen 2
         for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
@@ -166,6 +170,13 @@ def load_data():
                         df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
                 if "Total_Skor_Segmen2" in df_gsheet.columns:
                     df_gsheet["Total_Skor_Segmen2"] = pd.to_numeric(df_gsheet["Total_Skor_Segmen2"], errors="coerce").fillna(0)
+                
+                # Lengkapi sub-dimensi jika belum ada
+                df_gsheet = compute_subdimensions_for_df(df_gsheet)
+                for col in SUBDIMENSION_COLUMNS.values():
+                    if col in df_gsheet.columns:
+                        df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
+
                 return df_gsheet, "Google Sheets"
         except Exception as e:
             st.sidebar.warning(f"Gagal membaca Google Sheets ({e}), beralih ke penyimpanan lokal.")
@@ -185,6 +196,13 @@ def load_data():
                         df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
                 if "Total_Skor_Segmen2" in df_local.columns:
                     df_local["Total_Skor_Segmen2"] = pd.to_numeric(df_local["Total_Skor_Segmen2"], errors="coerce").fillna(0)
+                
+                # Lengkapi sub-dimensi jika belum ada
+                df_local = compute_subdimensions_for_df(df_local)
+                for col in SUBDIMENSION_COLUMNS.values():
+                    if col in df_local.columns:
+                        df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
+
                 return df_local, "File Lokal (data_survei.csv)"
         except Exception:
             pass
@@ -206,6 +224,9 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
 
     # Hitung skor per kategori Segmen 1
     cat_scores, overall_avg = calculate_category_scores(answers)
+
+    # Hitung skor per sub-dimensi Segmen 1
+    sub_scores = calculate_subdimension_scores(answers)
 
     # Hitung skor Segmen 2
     seg2_scores, seg2_total, seg2_severity = calculate_segmen2_scores(answers_segmen2)
@@ -231,6 +252,10 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
     for cat, col_name in DIMENSION_COLUMNS.items():
         record[col_name] = cat_scores.get(cat, 0.0)
     record["Skor_Rata_Rata_Total"] = overall_avg
+
+    # Skor sub-dimensi Segmen 1
+    for sub_name, col_name in SUBDIMENSION_COLUMNS.items():
+        record[col_name] = sub_scores.get(sub_name, 0.0)
 
     # Skor dimensi Segmen 2
     for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
@@ -290,6 +315,7 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
         "local_saved": local_saved,
         "gsheet_saved": gsheet_saved,
         "cat_scores": cat_scores,
+        "sub_scores": sub_scores,
         "overall_score": overall_avg,
         "seg2_scores": seg2_scores,
         "seg2_total": seg2_total,

@@ -10,9 +10,12 @@ from scoring_map import (
     SURVEY_QUESTIONS,
     CATEGORY_METADATA,
     DIMENSION_COLUMNS,
+    SUBDIMENSIONS_BY_CATEGORY,
+    SUBDIMENSION_COLUMNS,
     get_question_options,
     calculate_score,
     calculate_category_scores,
+    calculate_subdimension_scores,
     SEGMEN2_OPTIONS,
     SCORING_MAP_SEGMEN2,
     SURVEY_QUESTIONS_SEGMEN2,
@@ -20,7 +23,11 @@ from scoring_map import (
     DIMENSION_COLUMNS_SEGMEN2,
     calculate_score_segmen2,
     calculate_segmen2_scores,
-    get_dass_severity
+    get_dass_severity,
+    SUBDIMENSION_POLARITY,
+    get_score_level,
+    get_subdimension_status,
+    SUBDIMENSION_LABELS
 )
 
 from data_manager import (
@@ -103,21 +110,35 @@ st.markdown("""
         margin-top: 4px;
     }
 
-    /* Question Card */
+    /* Question Card - Default / Belum Dijawab */
     .question-card {
         background: #ffffff;
-        border-left: 4px solid #2563eb;
-        border-radius: 8px;
+        border: 1.5px solid #e2e8f0;
+        border-left: 5px solid #cbd5e1;
+        border-radius: 10px;
         padding: 16px 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        margin-bottom: 14px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        transition: all 0.25s ease-in-out;
     }
+    
+    /* Question Card - Sudah Dijawab (Highlight Biru Terang) */
+    .question-card.answered {
+        background: #f0f7ff;
+        background: linear-gradient(135deg, #f0f7ff 0%, #e0f2fe 100%);
+        border: 1.5px solid #93c5fd;
+        border-left: 5px solid #2563eb;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.09);
+    }
+
     .question-text {
         font-size: 14.5px;
         font-weight: 600;
         color: #1e293b;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
+        line-height: 1.5;
     }
+
     .question-id-badge {
         display: inline-block;
         background: #e0f2fe;
@@ -126,7 +147,33 @@ st.markdown("""
         font-weight: 700;
         padding: 2px 8px;
         border-radius: 6px;
-        margin-bottom: 8px;
+    }
+
+    .question-card.answered .question-id-badge {
+        background: #2563eb;
+        color: #ffffff;
+    }
+
+    .status-badge-unanswered {
+        display: inline-block;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .status-badge-answered {
+        display: inline-block;
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 12px;
+        border: 1px solid #bfdbfe;
     }
 
     /* Step Badge */
@@ -200,17 +247,17 @@ if "step" not in st.session_state:
 
 if "biodata" not in st.session_state:
     st.session_state["biodata"] = {
-        "bidang": BIDANG_OPTIONS[0],
+        "bidang": "",
         "nama": "",
-        "gender": "Laki-laki",
-        "usia": "25 - 34 tahun",
-        "masa_kerja": "1 - 3 tahun",
-        "jabatan": "Staf Pelaksana",
-        "riwayat_penyakit": "Tidak",
+        "gender": "",
+        "usia": "",
+        "masa_kerja": "",
+        "jabatan": "",
+        "riwayat_penyakit": "",
         "nama_penyakit": "-",
-        "berat_badan": 60,
-        "tinggi_badan": 165,
-        "status_perkawinan": "Belum menikah"
+        "berat_badan": None,
+        "tinggi_badan": None,
+        "status_perkawinan": ""
     }
 
 if "answers" not in st.session_state:
@@ -361,72 +408,113 @@ if menu == "📝 Form Survei":
     # -------------------------------------------------------------
     elif curr_step == 0:
         st.markdown("### 👤 Langkah 1 dari 11: Pengisian Data Diri & Asal Bidang")
-        st.info("Pilih asal bidang dan data diri Anda. Identitas nama/inisial dapat diisi dengan nama samaran/anonim jika diinginkan.")
+        st.info("ℹ️ **Seluruh kolom isian bertanda bintang (*) wajib diisi**. Untuk identitas nama, Anda dapat menggunakan nama lengkap, inisial, atau nama samaran jika ingin menjaga kerahasiaan.")
 
         with st.container(border=True):
             col1, col2 = st.columns(2)
             with col1:
+                cur_bidang = st.session_state["biodata"].get("bidang", "")
+                bidang_idx = BIDANG_OPTIONS.index(cur_bidang) if cur_bidang in BIDANG_OPTIONS else None
                 selected_bidang = st.selectbox(
                     "Asal Bidang Kerja *",
                     options=BIDANG_OPTIONS,
-                    index=BIDANG_OPTIONS.index(st.session_state["biodata"]["bidang"]) if st.session_state["biodata"]["bidang"] in BIDANG_OPTIONS else 0,
-                    help="Pilih salah satu dari 4 bidang penugasan kerja Anda."
+                    index=bidang_idx,
+                    placeholder="-- Pilih Asal Bidang Kerja * --",
+                    help="Pilih salah satu dari bidang penugasan kerja Anda."
                 )
                 nama_input = st.text_input(
-                    "Nama Lengkap / Inisial (Opsional)",
-                    value=st.session_state["biodata"]["nama"],
-                    placeholder="Contoh: Responden A / John Doe"
+                    "Nama Lengkap / Inisial *",
+                    value=st.session_state["biodata"].get("nama", ""),
+                    placeholder="Contoh: Responden A / John Doe / JD (Wajib diisi)"
                 )
+                gender_opts = ["Laki-laki", "Perempuan"]
+                cur_gender = st.session_state["biodata"].get("gender", "")
+                gender_idx = gender_opts.index(cur_gender) if cur_gender in gender_opts else None
                 gender_input = st.radio(
-                    "Jenis Kelamin",
-                    options=["Laki-laki", "Perempuan"],
-                    index=0 if st.session_state["biodata"]["gender"] == "Laki-laki" else 1,
+                    "Jenis Kelamin *",
+                    options=gender_opts,
+                    index=gender_idx,
                     horizontal=True
                 )
-                riwayat_input = st.radio("Apakah Anda mempunyai riwayat penyakit?", options=["Tidak", "Ya"],
-                                        index=0 if st.session_state["biodata"].get("riwayat_penyakit", "Tidak") == "Tidak" else 1,
-                                        horizontal=True)
+                riwayat_opts = ["Tidak", "Ya"]
+                cur_riwayat = st.session_state["biodata"].get("riwayat_penyakit", "")
+                riwayat_idx = riwayat_opts.index(cur_riwayat) if cur_riwayat in riwayat_opts else None
+                riwayat_input = st.radio(
+                    "Apakah Anda mempunyai riwayat penyakit? *",
+                    options=riwayat_opts,
+                    index=riwayat_idx,
+                    horizontal=True
+                )
                 
-                # Input kondisional 
+                # Input kondisional
                 nama_penyakit = "-"
                 if riwayat_input == "Ya":
-                    nama_penyakit = st.text_input("Jika iya, penyakit apa?", value="" if st.session_state["biodata"].get("nama_penyakit") == "-"
-                    else st.session_state["biodata"].get("nama_penyakit", ""),
-                    placeholder="Contoh: Asma, Asam Lambung, Hipertensi, dll.")
+                    saved_np = st.session_state["biodata"].get("nama_penyakit", "")
+                    nama_penyakit = st.text_input(
+                        "Jika ya, sebutkan riwayat penyakit Anda *",
+                        value="" if saved_np == "-" else saved_np,
+                        placeholder="Contoh: Asma, Asam Lambung, Hipertensi, dll."
+                    )
                 
                 # Berat badan & Tinggi badan
                 col_bb, col_tb = st.columns(2)
                 with col_bb:
-                    bb_input = st.number_input("Berat Badan (kg)", min_value=30, max_value=200,
-                                                value=int(st.session_state["biodata"].get("berat_badan", 60)), step=1)
+                    bb_val = int(st.session_state["biodata"]["berat_badan"]) if st.session_state["biodata"].get("berat_badan") is not None else None
+                    bb_input = st.number_input(
+                        "Berat Badan (kg) *",
+                        min_value=30,
+                        max_value=200,
+                        value=bb_val,
+                        placeholder="Contoh: 60",
+                        step=1
+                    )
                 with col_tb:
-                    tb_input = st.number_input("Tinggi Badan (cm)", min_value=100, max_value=220,
-                                                value=int(st.session_state["biodata"].get("tinggi_badan", 165)), step=1)
+                    tb_val = int(st.session_state["biodata"]["tinggi_badan"]) if st.session_state["biodata"].get("tinggi_badan") is not None else None
+                    tb_input = st.number_input(
+                        "Tinggi Badan (cm) *",
+                        min_value=100,
+                        max_value=220,
+                        value=tb_val,
+                        placeholder="Contoh: 165",
+                        step=1
+                    )
 
             with col2:
                 usia_options = ["< 25 tahun", "25 - 34 tahun", "35 - 44 tahun", "45 - 54 tahun", "≥ 55 tahun"]
+                cur_usia = st.session_state["biodata"].get("usia", "")
+                usia_idx = usia_options.index(cur_usia) if cur_usia in usia_options else None
                 usia_input = st.selectbox(
-                    "Rentang Usia",
+                    "Rentang Usia *",
                     options=usia_options,
-                    index=usia_options.index(st.session_state["biodata"]["usia"]) if st.session_state["biodata"]["usia"] in usia_options else 1
+                    index=usia_idx,
+                    placeholder="-- Pilih Rentang Usia * --"
                 )
                 masa_kerja_options = ["< 1 tahun", "1 - 3 tahun", "4 - 10 tahun", "> 10 tahun"]
+                cur_mk = st.session_state["biodata"].get("masa_kerja", "")
+                mk_idx = masa_kerja_options.index(cur_mk) if cur_mk in masa_kerja_options else None
                 masa_kerja_input = st.selectbox(
-                    "Masa Kerja",
+                    "Masa Kerja *",
                     options=masa_kerja_options,
-                    index=masa_kerja_options.index(st.session_state["biodata"]["masa_kerja"]) if st.session_state["biodata"]["masa_kerja"] in masa_kerja_options else 1
+                    index=mk_idx,
+                    placeholder="-- Pilih Masa Kerja * --"
                 )
                 jabatan_options = ["Staf Pelaksana", "Pengawas / Koordinator", "Fungsional Ahli", "Manajemen / Struktural", "Lainnya"]
+                cur_jab = st.session_state["biodata"].get("jabatan", "")
+                jab_idx = jabatan_options.index(cur_jab) if cur_jab in jabatan_options else None
                 jabatan_input = st.selectbox(
-                    "Posisi / Jabatan",
+                    "Posisi / Jabatan *",
                     options=jabatan_options,
-                    index=jabatan_options.index(st.session_state["biodata"]["jabatan"]) if st.session_state["biodata"]["jabatan"] in jabatan_options else 0
+                    index=jab_idx,
+                    placeholder="-- Pilih Posisi / Jabatan * --"
                 )
-                status_perkawinan = ["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"]
-                status_perkawinan = st.selectbox(
-                    "Status Pernikahan",
-                    options = status_perkawinan,
-                    index = status_perkawinan.index(st.session_state["biodata"]["status_perkawinan"]) if st.session_state["biodata"]["status_perkawinan"] in status_perkawinan else 0
+                status_perkawinan_opts = ["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"]
+                cur_kawin = st.session_state["biodata"].get("status_perkawinan", "")
+                kawin_idx = status_perkawinan_opts.index(cur_kawin) if cur_kawin in status_perkawinan_opts else None
+                status_perkawinan_input = st.selectbox(
+                    "Status Pernikahan *",
+                    options=status_perkawinan_opts,
+                    index=kawin_idx,
+                    placeholder="-- Pilih Status Pernikahan * --"
                 )
 
         st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
@@ -437,19 +525,47 @@ if menu == "📝 Form Survei":
                 st.rerun()
         with col_b2:
             if st.button("Mulai Mengisi Kuesioner ➡️", type="primary", use_container_width=True):
-                st.session_state["biodata"]["bidang"] = selected_bidang
-                st.session_state["biodata"]["nama"] = nama_input.strip() if nama_input.strip() else "Anonim"
-                st.session_state["biodata"]["gender"] = gender_input
-                st.session_state["biodata"]["usia"] = usia_input
-                st.session_state["biodata"]["masa_kerja"] = masa_kerja_input
-                st.session_state["biodata"]["jabatan"] = jabatan_input
-                st.session_state["biodata"]["riwayat_penyakit"] = riwayat_input
-                st.session_state["biodata"]["nama_penyakit"] = nama_penyakit.strip() if nama_penyakit.strip() else "-"
-                st.session_state["biodata"]["berat_badan"] = bb_input
-                st.session_state["biodata"]["tinggi_badan"] = tb_input
-                st.session_state["biodata"]["status_perkawinan"] = status_perkawinan
-                st.session_state["step"] = 1
-                st.rerun()
+                errors = []
+                if not selected_bidang:
+                    errors.append("Asal Bidang Kerja wajib dipilih.")
+                if not nama_input or not nama_input.strip():
+                    errors.append("Nama Lengkap / Inisial wajib diisi (bisa inisial atau samaran).")
+                if not gender_input:
+                    errors.append("Jenis Kelamin wajib dipilih.")
+                if not riwayat_input:
+                    errors.append("Pertanyaan riwayat penyakit wajib dijawab.")
+                elif riwayat_input == "Ya" and (not nama_penyakit or not nama_penyakit.strip() or nama_penyakit.strip() == "-"):
+                    errors.append("Karena Anda memilih memiliki riwayat penyakit, mohon sebutkan nama riwayat penyakit Anda.")
+                if bb_input is None:
+                    errors.append("Berat Badan (kg) wajib diisi.")
+                if tb_input is None:
+                    errors.append("Tinggi Badan (cm) wajib diisi.")
+                if not usia_input:
+                    errors.append("Rentang Usia wajib dipilih.")
+                if not masa_kerja_input:
+                    errors.append("Masa Kerja wajib dipilih.")
+                if not jabatan_input:
+                    errors.append("Posisi / Jabatan wajib dipilih.")
+                if not status_perkawinan_input:
+                    errors.append("Status Pernikahan wajib dipilih.")
+
+                if errors:
+                    err_lines = "\n".join([f"- {e}" for e in errors])
+                    st.warning(f"⚠️ **Mohon lengkapi seluruh kolom isian berikut sebelum melanjutkan:**\n\n{err_lines}")
+                else:
+                    st.session_state["biodata"]["bidang"] = selected_bidang
+                    st.session_state["biodata"]["nama"] = nama_input.strip()
+                    st.session_state["biodata"]["gender"] = gender_input
+                    st.session_state["biodata"]["usia"] = usia_input
+                    st.session_state["biodata"]["masa_kerja"] = masa_kerja_input
+                    st.session_state["biodata"]["jabatan"] = jabatan_input
+                    st.session_state["biodata"]["riwayat_penyakit"] = riwayat_input
+                    st.session_state["biodata"]["nama_penyakit"] = nama_penyakit.strip() if riwayat_input == "Ya" else "-"
+                    st.session_state["biodata"]["berat_badan"] = bb_input
+                    st.session_state["biodata"]["tinggi_badan"] = tb_input
+                    st.session_state["biodata"]["status_perkawinan"] = status_perkawinan_input
+                    st.session_state["step"] = 1
+                    st.rerun()
 
 
     # -------------------------------------------------------------
@@ -471,17 +587,40 @@ if menu == "📝 Form Survei":
         st.progress(progress_val, text=f"Segmen 1 (Langkah {curr_step + 1} dari 11): {meta['label']} ({progress_val}% Selesai)")
 
         # Section Header
+        answered_in_cat = sum(1 for q in questions if (st.session_state.get(f"q_{q['id']}") is not None and str(st.session_state.get(f"q_{q['id']}")).strip() != "") or (st.session_state["answers"].get(q["id"]) is not None and str(st.session_state["answers"].get(q["id"])).strip() != ""))
+
         st.markdown(f"### {meta['icon']} Segmen 1 - Bagian {curr_step}: {meta['label']}")
-        st.caption(f"{meta['desc']} (Total: {len(questions)} butir pertanyaan)")
+        st.caption(f"{meta['desc']} (Total: {len(questions)} butir pertanyaan • **{answered_in_cat} dari {len(questions)}** telah dijawab)")
         st.divider()
 
         # Iterate Questions
         unanswered_ids = []
+        last_sub = None
         for idx, q in enumerate(questions, 1):
             qid = q["id"]
             code = q["code"]
             q_text = q["text"]
-            saved_val = st.session_state["answers"].get(qid, None)
+            sub_name = q.get("sub", "")
+            sub_note = q.get("sub_note", "")
+
+            # Ambil nilai tersimpan atau nilai terkini dari state
+            val_in_state = st.session_state.get(f"q_{qid}")
+            if val_in_state is not None:
+                saved_val = val_in_state
+                st.session_state["answers"][qid] = val_in_state
+            else:
+                saved_val = st.session_state["answers"].get(qid, None)
+
+            # Header Sub-Dimensi jika berganti
+            if sub_name and sub_name != last_sub:
+                last_sub = sub_name
+                st.markdown(f"""
+                <div style="background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%); border-left: 4px solid #0284c7; padding: 12px 18px; border-radius: 8px; margin: 22px 0 14px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="font-size: 11px; font-weight: 700; color: #0284c7; text-transform: uppercase; letter-spacing: 0.5px;">📌 Sub-Dimensi</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">{sub_name}</div>
+                    {f"<div style='font-size: 12.5px; color: #475569; margin-top: 3px; font-style: italic;'>{sub_note}</div>" if sub_note else ""}
+                </div>
+                """, unsafe_allow_html=True)
 
             # Special case for 5M follow-up questions in Konflik & Perilaku Ofensif
             # If the preceding question was 'Tidak ada sama sekali', skip/auto-fill 5M
@@ -496,11 +635,25 @@ if menu == "📝 Form Survei":
                         is_5m_skipped = True
                         st.session_state["answers"][qid] = "Tidak ada"
 
+            is_answered = is_5m_skipped or (saved_val is not None and str(saved_val).strip() != "")
+            card_class = "question-card answered" if is_answered else "question-card"
+            status_badge = (
+                '<span class="status-badge-answered">✓ Sudah Dijawab</span>'
+                if is_answered
+                else '<span class="status-badge-unanswered">⏳ Belum Dijawab</span>'
+            )
+
             with st.container():
                 st.markdown(f"""
-                <div class="question-card">
-                    <span class="question-id-badge">{qid}</span>
-                    <div class="question-text">{idx}. {q_text}</div>
+                <div class="{card_class}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div>
+                            <span class="question-id-badge">{qid}</span>
+                            <span style="font-size: 11.5px; color: #64748b; font-weight: 600; margin-left: 6px;">• {sub_name}</span>
+                        </div>
+                        {status_badge}
+                    </div>
+                    <div class="question-text">{idx}. {q_text} <span style="color:#ef4444;">*</span></div>
                 </div>
                 """, unsafe_allow_html=True)
 
@@ -508,25 +661,32 @@ if menu == "📝 Form Survei":
                     st.info("ℹ️ Pertanyaan ini otomatis dilewati karena pada pertanyaan sebelumnya Anda memilih 'Tidak ada sama sekali'.")
                 elif code == "5M":
                     options = get_question_options(code)
-                    cur_val = saved_val if saved_val in options else options[-1]
+                    cur_idx = options.index(saved_val) if saved_val in options else None
                     sel_ans = st.selectbox(
-                        "Pilih pihak yang bersangkutan:",
+                        "Pilih pihak yang bersangkutan: *",
                         options=options,
-                        index=options.index(cur_val) if cur_val in options else 0,
+                        index=cur_idx,
+                        placeholder="-- Pilih pihak yang bersangkutan * --",
                         key=f"q_{qid}"
                     )
-                    st.session_state["answers"][qid] = sel_ans
+                    if sel_ans is not None:
+                        st.session_state["answers"][qid] = sel_ans
+                    else:
+                        st.session_state["answers"].pop(qid, None)
                 elif code == "8":
-                    # Numerical scale 0 to 10
-                    default_val = int(saved_val) if saved_val is not None and str(saved_val).isdigit() else 7
-                    sel_ans = st.slider(
-                        "Skala 0 (Terburuk) hingga 10 (Terbaik):",
-                        min_value=0,
-                        max_value=10,
-                        value=default_val,
-                        key=f"q_{qid}"
+                    scale_options = [str(i) for i in range(11)]
+                    cur_idx = scale_options.index(str(saved_val)) if saved_val is not None and str(saved_val) in scale_options else None
+                    sel_ans = st.radio(
+                        "Pilihan Skala 0 (Terburuk) hingga 10 (Terbaik): *",
+                        options=scale_options,
+                        index=cur_idx,
+                        key=f"q_{qid}",
+                        horizontal=True
                     )
-                    st.session_state["answers"][qid] = str(sel_ans)
+                    if sel_ans is not None:
+                        st.session_state["answers"][qid] = str(sel_ans)
+                    else:
+                        st.session_state["answers"].pop(qid, None)
                 else:
                     options = get_question_options(code)
                     # Radio option
@@ -535,7 +695,7 @@ if menu == "📝 Form Survei":
                         cur_idx = options.index(saved_val)
                     
                     sel_ans = st.radio(
-                        "Pilihan Jawaban:",
+                        "Pilihan Jawaban: *",
                         options=options,
                         index=cur_idx,
                         key=f"q_{qid}",
@@ -544,6 +704,7 @@ if menu == "📝 Form Survei":
                     if sel_ans is not None:
                         st.session_state["answers"][qid] = sel_ans
                     else:
+                        st.session_state["answers"].pop(qid, None)
                         unanswered_ids.append(f"No. {idx} ({qid})")
 
             st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
@@ -559,9 +720,13 @@ if menu == "📝 Form Survei":
             next_label = "Lanjut ke Segmen 2 (Kesehatan Mental) ➡️" if curr_step == len(categories_list) else "Selanjutnya ➡️"
             if st.button(next_label, type="primary", use_container_width=True):
                 # Validasi kelengkapan pertanyaan di bagian ini
-                missing = [q["id"] for q in questions if q["id"] not in st.session_state["answers"] or st.session_state["answers"][q["id"]] is None]
+                missing = [q["id"] for q in questions if q["id"] not in st.session_state["answers"] or st.session_state["answers"][q["id"]] is None or str(st.session_state["answers"][q["id"]]).strip() == ""]
                 if missing:
-                    st.warning(f"⚠️ Masih ada {len(missing)} pertanyaan pada bagian ini yang belum dijawab. Mohon lengkapi semua sebelum melanjutkan.")
+                    idx_map = {q["id"]: i for i, q in enumerate(questions, 1)}
+                    missing_num_str = ", ".join([f"No. {idx_map[m]} ({m})" for m in missing[:5]])
+                    if len(missing) > 5:
+                        missing_num_str += f" dan {len(missing) - 5} butir lainnya"
+                    st.warning(f"⚠️ Masih ada **{len(missing)} butir pertanyaan** pada bagian ini yang belum dijawab ({missing_num_str}). Seluruh pertanyaan wajib diisi sebelum melanjutkan.")
                 else:
                     st.session_state["step"] = curr_step + 1
                     st.rerun()
@@ -599,19 +764,42 @@ if menu == "📝 Form Survei":
         for dim_key, questions in SURVEY_QUESTIONS_SEGMEN2.items():
             dim_meta = CATEGORY_METADATA_SEGMEN2.get(dim_key, {"label": dim_key, "icon": "📝", "desc": ""})
             
+            # Hitung jumlah butir yang telah dijawab di dimensi ini
+            ans_dim_cnt = sum(1 for q in questions if (st.session_state.get(f"q_seg2_{q['id']}") is not None and str(st.session_state.get(f"q_seg2_{q['id']}")).strip() != "") or (st.session_state["answers_segmen2"].get(q["id"]) is not None and str(st.session_state["answers_segmen2"].get(q["id"])).strip() != ""))
             st.markdown(f"### {dim_meta['icon']} Dimensi {dim_meta['label']}")
-            st.caption(f"{dim_meta['desc']} (Total: {len(questions)} butir)")
+            st.caption(f"{dim_meta['desc']} (Total: {len(questions)} butir • **{ans_dim_cnt} dari {len(questions)}** telah dijawab)")
 
             for idx, q in enumerate(questions, 1):
                 qid = q["id"]
                 q_text = q["text"]
-                saved_val = st.session_state["answers_segmen2"].get(qid, None)
+                
+                # Cek status jawaban saat ini
+                val_in_state = st.session_state.get(f"q_seg2_{qid}")
+                if val_in_state is not None:
+                    saved_val = val_in_state
+                    st.session_state["answers_segmen2"][qid] = val_in_state
+                else:
+                    saved_val = st.session_state["answers_segmen2"].get(qid, None)
+
+                is_answered = bool(saved_val is not None and str(saved_val).strip() != "")
+                card_class = "question-card answered" if is_answered else "question-card"
+                status_badge = (
+                    '<span class="status-badge-answered">✓ Sudah Dijawab</span>'
+                    if is_answered
+                    else '<span class="status-badge-unanswered">⏳ Belum Dijawab</span>'
+                )
 
                 with st.container():
                     st.markdown(f"""
-                    <div class="question-card" style="border-left-color: #6366f1;">
-                        <span class="question-id-badge" style="background: #e0e7ff; color: #4338ca;">{qid}</span>
-                        <div class="question-text">{idx}. {q_text}</div>
+                    <div class="{card_class}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div>
+                                <span class="question-id-badge">{qid}</span>
+                                <span style="font-size: 11.5px; color: #64748b; font-weight: 600; margin-left: 6px;">• {dim_key}</span>
+                            </div>
+                            {status_badge}
+                        </div>
+                        <div class="question-text">{idx}. {q_text} <span style="color:#ef4444;">*</span></div>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -620,7 +808,7 @@ if menu == "📝 Form Survei":
                         cur_idx = SEGMEN2_OPTIONS.index(saved_val)
 
                     sel_ans = st.radio(
-                        "Pilihan Jawaban:",
+                        "Pilihan Jawaban: *",
                         options=SEGMEN2_OPTIONS,
                         index=cur_idx,
                         key=f"q_seg2_{qid}",
@@ -629,6 +817,8 @@ if menu == "📝 Form Survei":
 
                     if sel_ans is not None:
                         st.session_state["answers_segmen2"][qid] = sel_ans
+                    else:
+                        st.session_state["answers_segmen2"].pop(qid, None)
 
                 st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
 
@@ -648,11 +838,15 @@ if menu == "📝 Form Survei":
                 for dim_key, qs in SURVEY_QUESTIONS_SEGMEN2.items():
                     for q in qs:
                         val = st.session_state["answers_segmen2"].get(q["id"])
-                        if val is None or val == "":
+                        if val is None or str(val).strip() == "":
                             missing.append(q["id"])
 
                 if missing:
-                    st.warning(f"⚠️ Masih ada {len(missing)} butir pertanyaan pada Segmen 2 yang belum dijawab ({', '.join(missing[:5])}{'...' if len(missing) > 5 else ''}). Mohon lengkapi semua sebelum melanjutkan.")
+                    idx_map2 = {q["id"]: f"No. {i} ({q['id']})" for qs in SURVEY_QUESTIONS_SEGMEN2.values() for i, q in enumerate(qs, 1)}
+                    missing_num_str = ", ".join([idx_map2.get(m, m) for m in missing[:5]])
+                    if len(missing) > 5:
+                        missing_num_str += f" dan {len(missing) - 5} butir lainnya"
+                    st.warning(f"⚠️ Masih ada **{len(missing)} butir pertanyaan** pada Segmen 2 yang belum dijawab ({missing_num_str}). Seluruh pertanyaan wajib diisi sebelum melanjutkan.")
                 else:
                     st.session_state["step"] = 10
                     st.rerun()
@@ -674,6 +868,9 @@ if menu == "📝 Form Survei":
                 st.write(f"**Rentang Usia:** {st.session_state['biodata']['usia']}")
                 st.write(f"**Masa Kerja:** {st.session_state['biodata']['masa_kerja']}")
                 st.write(f"**Posisi / Jabatan:** {st.session_state['biodata']['jabatan']}")
+                st.write(f"**Riwayat Penyakit:** {st.session_state['biodata']['riwayat_penyakit']}" + (f" ({st.session_state['biodata']['nama_penyakit']})" if st.session_state['biodata']['riwayat_penyakit'] == 'Ya' else ""))
+                st.write(f"**BB / TB:** {st.session_state['biodata']['berat_badan']} kg / {st.session_state['biodata']['tinggi_badan']} cm")
+                st.write(f"**Status Pernikahan:** {st.session_state['biodata']['status_perkawinan']}")
 
         with col2:
             with st.container(border=True):
@@ -699,11 +896,18 @@ if menu == "📝 Form Survei":
 
         with col_submit:
             if st.button("🚀 Kirim Jawaban Survei Sekarang", type="primary", use_container_width=True):
-                with st.spinner("Menyimpan jawaban ke database..."):
-                    res = save_survey_response(st.session_state["biodata"], st.session_state["answers"], st.session_state["answers_segmen2"])
-                    st.session_state["submission_result"] = res
-                    st.session_state["step"] = 11
-                    st.rerun()
+                # Double check all inputs are complete
+                missing_q1 = [q["id"] for qs in SURVEY_QUESTIONS.values() for q in qs if q["id"] not in st.session_state["answers"] or st.session_state["answers"][q["id"]] is None or str(st.session_state["answers"][q["id"]]).strip() == ""]
+                missing_q2 = [q["id"] for qs in SURVEY_QUESTIONS_SEGMEN2.values() for q in qs if q["id"] not in st.session_state["answers_segmen2"] or st.session_state["answers_segmen2"][q["id"]] is None or str(st.session_state["answers_segmen2"][q["id"]]).strip() == ""]
+                
+                if missing_q1 or missing_q2:
+                    st.error("⚠️ Terdapat butir pertanyaan yang belum terisi lengkap. Mohon periksa kembali kuesioner Anda sebelum mengirim.")
+                else:
+                    with st.spinner("Menyimpan jawaban ke database..."):
+                        res = save_survey_response(st.session_state["biodata"], st.session_state["answers"], st.session_state["answers_segmen2"])
+                        st.session_state["submission_result"] = res
+                        st.session_state["step"] = 11
+                        st.rerun()
 
     # -------------------------------------------------------------
     # STEP 11: HASIL SUBMIT & PROFIL RADAR INDIVIDU
@@ -760,6 +964,88 @@ if menu == "📝 Form Survei":
                     height=360
                 )
                 st.plotly_chart(fig_radar, use_container_width=True)
+
+            # Visualisasi Rincian Skor per Sub-Dimensi Segmen 1
+            sub_scores = res.get("sub_scores") if res else None
+            if not sub_scores and res and "answers" in st.session_state:
+                sub_scores = calculate_subdimension_scores(st.session_state["answers"])
+
+            if sub_scores:
+                with st.expander("🔬 Lihat Visualisasi Barchart Horizontal Sub-Dimensi (45 Sub-Bidang)", expanded=True):
+                    st.caption("Visualisasi barchart horizontal per sub-bidang dengan batas kategori **Rendah (0 - 33,33)**, **Sedang (33,34 - 66,66)**, dan **Tinggi (66,67 - 100)**.")
+
+                    selected_view_cat = st.selectbox(
+                        "Pilih Dimensi untuk Melihat Detail Sub-Bidang:",
+                        options=categories_list,
+                        format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
+                        key="resp_sub_dim_selector"
+                    )
+
+                    c_meta = CATEGORY_METADATA.get(selected_view_cat, {"label": selected_view_cat, "icon": "📁"})
+                    sub_list = SUBDIMENSIONS_BY_CATEGORY.get(selected_view_cat, [])
+
+                    resp_chart_items = []
+                    resp_tbl_rows = []
+                    for idx, s in enumerate(sub_list, 1):
+                        val = float(sub_scores.get(s, 0.0))
+                        lbl_info = SUBDIMENSION_LABELS.get(s, {"en": s, "id": s})
+                        disp_name = f"{lbl_info['en']} ({lbl_info['id']})"
+                        lvl = get_score_level(val)
+                        pol = SUBDIMENSION_POLARITY.get(s, "Favorable")
+                        _, stat_text, clr = get_subdimension_status(s, val)
+
+                        resp_chart_items.append({
+                            "name": disp_name,
+                            "score": val,
+                            "level": lvl,
+                            "color": clr,
+                            "polarity": pol,
+                            "status": stat_text
+                        })
+                        resp_tbl_rows.append({
+                            "No": idx,
+                            "Sub-Bidang": disp_name,
+                            "Sifat": pol,
+                            "Skor Anda": val,
+                            "Kategori": lvl,
+                            "Status Risiko": stat_text
+                        })
+
+                    fig_resp_hbar = go.Figure()
+                    fig_resp_hbar.add_trace(go.Bar(
+                        y=[it["name"] for it in resp_chart_items],
+                        x=[it["score"] for it in resp_chart_items],
+                        orientation="h",
+                        marker=dict(
+                            color=[it["color"] for it in resp_chart_items],
+                            line=dict(color="rgba(0,0,0,0.15)", width=1)
+                        ),
+                        text=[f" <b>{it['score']:.1f}</b> ({it['level']})" for it in resp_chart_items],
+                        textposition="outside",
+                        cliponaxis=False,
+                        customdata=[[it["level"], it["polarity"], it["status"]] for it in resp_chart_items],
+                        hovertemplate="<b>%{y}</b><br>Skor Anda: <b>%{x:.1f}</b> / 100<br>Kategori: <b>%{customdata[0]}</b><br>Sifat: %{customdata[1]}<br>Status: %{customdata[2]}<extra></extra>"
+                    ))
+
+                    fig_resp_hbar.add_vline(x=33.33, line_dash="dash", line_color="#94a3b8", line_width=1.5,
+                                            annotation_text="Batas Rendah (33.33)", annotation_position="top right")
+                    fig_resp_hbar.add_vline(x=66.67, line_dash="dash", line_color="#94a3b8", line_width=1.5,
+                                            annotation_text="Batas Tinggi (66.67)", annotation_position="top right")
+
+                    fig_resp_hbar.update_layout(
+                        title=dict(
+                            text=f"Detail Subdimensi: {c_meta.get('label', selected_view_cat)}",
+                            font=dict(size=15, color="#0f172a")
+                        ),
+                        xaxis=dict(range=[0, 115], title="Skor Penilaian (0 - 100)", gridcolor="#f1f5f9"),
+                        yaxis=dict(title="", autorange="reversed", tickfont=dict(size=12)),
+                        height=max(320, len(sub_list) * 55),
+                        margin=dict(l=20, r=40, t=60, b=40),
+                        plot_bgcolor="white",
+                        paper_bgcolor="white"
+                    )
+                    st.plotly_chart(fig_resp_hbar, use_container_width=True)
+                    st.dataframe(pd.DataFrame(resp_tbl_rows), use_container_width=True, hide_index=True)
 
         # Visualisasi Skor Segmen 2
         if res and "seg2_scores" in res:
@@ -1142,6 +1428,152 @@ elif menu == "📊 Dashboard Hasil Survei":
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # -------------------------------------------------------------
+        # GRAFIK: ANALISIS MENDALAM SKOR SUB-DIMENSI (45 SUB-BIDANG)
+        # -------------------------------------------------------------
+        with st.container(border=True):
+            st.markdown("#### 🔬 Visualisasi Horizontal Barchart per Sub-Bidang")
+            st.caption("Pilih asal bidang kerja dan dimensi utama untuk menganalisis skor profil sub-dimensi dalam bentuk grafik batang horizontal.")
+
+            st.info("""
+            📌 **Ketentuan Penilaian Sub-Bidang**:
+            * **Rumus Skor Sub-Bidang**: $\\text{Skor} = \\frac{\\sum \\text{Skor Butir}}{\\text{Jumlah Butir}}$
+            * **Rentang Kategori**: **Rendah** (0 - 33,33) | **Sedang** (33,34 - 66,66) | **Tinggi** (66,67 - 100)
+            * **Sifat Favorable**: Skor Tinggi = 🟢 **Baik / Risiko Rendah**, Skor Rendah = 🔴 **Kurang / Risiko Tinggi**
+            * **Sifat Unfavorable**: Skor Rendah = 🟢 **Baik / Risiko Rendah**, Skor Tinggi = 🔴 **Bahaya / Risiko Tinggi**
+            """)
+
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                bidang_selector_options = ["Semua Bidang (Rata-rata Keseluruhan)"] + BIDANG_OPTIONS
+                selected_bidang_dash = st.selectbox(
+                    "🏢 Pilih Asal Bidang Kerja:",
+                    options=bidang_selector_options,
+                    key="dash_selected_bidang_filter"
+                )
+
+            with col_d2:
+                selected_sub_category = st.selectbox(
+                    "📁 Pilih Dimensi Utama (Kategori):",
+                    options=categories_list,
+                    format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
+                    key="dash_selected_sub_cat"
+                )
+
+            # Filter data sesuai bidang yang dipilih
+            if selected_bidang_dash == "Semua Bidang (Rata-rata Keseluruhan)":
+                df_scope = df_filtered
+                scope_label = "Seluruh Bidang (Rata-rata Keseluruhan)"
+            else:
+                df_scope = df_filtered[df_filtered["Bidang"] == selected_bidang_dash] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                scope_label = f"Bidang {selected_bidang_dash}"
+
+            subs_in_cat = SUBDIMENSIONS_BY_CATEGORY.get(selected_sub_category, [])
+            c_meta = CATEGORY_METADATA.get(selected_sub_category, {"label": selected_sub_category, "icon": "📁"})
+
+            if df_scope.empty:
+                st.warning(f"Belum ada data responden untuk {scope_label}.")
+            elif subs_in_cat:
+                chart_items = []
+                tbl_rows = []
+                for idx, s_name in enumerate(subs_in_cat, 1):
+                    col_s = SUBDIMENSION_COLUMNS.get(s_name)
+                    if col_s and col_s in df_scope.columns:
+                        s_series = pd.to_numeric(df_scope[col_s], errors='coerce').dropna()
+                        avg_val = round(s_series.mean(), 1) if not s_series.empty else 0.0
+                    else:
+                        avg_val = 0.0
+
+                    label_info = SUBDIMENSION_LABELS.get(s_name, {"en": s_name, "id": s_name})
+                    display_label = f"{label_info['en']} ({label_info['id']})"
+                    level = get_score_level(avg_val)
+                    polarity = SUBDIMENSION_POLARITY.get(s_name, "Favorable")
+                    _, status_text, color = get_subdimension_status(s_name, avg_val)
+
+                    chart_items.append({
+                        "name": display_label,
+                        "raw_name": s_name,
+                        "score": avg_val,
+                        "level": level,
+                        "polarity": polarity,
+                        "status": status_text,
+                        "color": color
+                    })
+                    tbl_rows.append({
+                        "No": idx,
+                        "Sub-Bidang": display_label,
+                        "Sifat": polarity,
+                        "Skor": avg_val,
+                        "Kategori": level,
+                        "Status Risiko": status_text
+                    })
+
+                # Visualisasi Barchart Horizontal Plotly
+                y_labels = [item["name"] for item in chart_items]
+                scores = [item["score"] for item in chart_items]
+                colors = [item["color"] for item in chart_items]
+                texts = [f" <b>{item['score']:.1f}</b> ({item['level']})" for item in chart_items]
+                customdata = [[item["level"], item["polarity"], item["status"]] for item in chart_items]
+
+                fig_sub_hbar = go.Figure()
+                fig_sub_hbar.add_trace(go.Bar(
+                    y=y_labels,
+                    x=scores,
+                    orientation="h",
+                    marker=dict(
+                        color=colors,
+                        line=dict(color="rgba(0,0,0,0.15)", width=1)
+                    ),
+                    text=texts,
+                    textposition="outside",
+                    cliponaxis=False,
+                    customdata=customdata,
+                    hovertemplate="<b>%{y}</b><br>Skor Rata-Rata: <b>%{x:.1f}</b> / 100<br>Kategori: <b>%{customdata[0]}</b><br>Sifat: %{customdata[1]}<br>Status Risiko: %{customdata[2]}<extra></extra>"
+                ))
+
+                # Garis batas ketentuan kategori
+                fig_sub_hbar.add_vline(
+                    x=33.33, line_dash="dash", line_color="#94a3b8", line_width=1.5,
+                    annotation_text="Batas Rendah (33.33)", annotation_position="top right",
+                    annotation_font=dict(size=10.5, color="#64748b")
+                )
+                fig_sub_hbar.add_vline(
+                    x=66.67, line_dash="dash", line_color="#94a3b8", line_width=1.5,
+                    annotation_text="Batas Tinggi (66.67)", annotation_position="top right",
+                    annotation_font=dict(size=10.5, color="#64748b")
+                )
+
+                fig_sub_hbar.update_layout(
+                    title=dict(
+                        text=f"📊 Barchart Horizontal: {c_meta.get('label', selected_sub_category)} — {scope_label}",
+                        font=dict(size=15, color="#0f172a")
+                    ),
+                    xaxis=dict(
+                        range=[0, 115],
+                        title="Skor Rata-Rata Sub-Bidang (0 - 100)",
+                        tickvals=[0, 20, 33.33, 50, 66.67, 80, 100],
+                        gridcolor="#f1f5f9"
+                    ),
+                    yaxis=dict(
+                        title="",
+                        autorange="reversed",
+                        tickfont=dict(size=12, color="#1e293b")
+                    ),
+                    height=max(360, len(y_labels) * 58),
+                    margin=dict(l=20, r=40, t=60, b=40),
+                    plot_bgcolor="white",
+                    paper_bgcolor="white"
+                )
+
+                st.plotly_chart(fig_sub_hbar, use_container_width=True)
+
+                # Tabel Rincian Data Native Streamlit
+                st.markdown(f"**Tabel Rincian Skor ({len(subs_in_cat)} Sub-Bidang):**")
+                st.dataframe(pd.DataFrame(tbl_rows), use_container_width=True, hide_index=True)
+                    
+
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+        # -------------------------------------------------------------
         # GRAFIK 3: ANALISIS INSIDENSI PERILAKU OFENSIF (BAGIAN 6)
         # -------------------------------------------------------------
         with st.container(border=True):
@@ -1269,11 +1701,12 @@ elif menu == "📊 Dashboard Hasil Survei":
         with st.container(border=True):
             st.markdown("#### 📑 Rekapitulasi Data Responden")
             
-            # Kolom ringkasan yang nyaman dibaca mencakup Segmen 1 dan Segmen 2
+            # Kolom ringkasan yang nyaman dibaca mencakup Segmen 1, Sub-Dimensi, dan Segmen 2
             summary_cols = (
                 ["ID_Responden", "Waktu_Pengisian", "Bidang", "Nama_Inisial", "Jenis_Kelamin", "Rentang_Usia", "Masa_Kerja", "Jabatan"]
                 + list(DIMENSION_COLUMNS.values())
                 + ["Skor_Rata_Rata_Total"]
+                + list(SUBDIMENSION_COLUMNS.values())
                 + list(DIMENSION_COLUMNS_SEGMEN2.values())
                 + ["Total_Skor_Segmen2", "Tingkat_Depresi", "Tingkat_Kecemasan", "Tingkat_Stress"]
             )
@@ -1341,44 +1774,3 @@ elif menu == "⚙️ Konfigurasi Spreadsheet":
                 st.rerun()
 
     st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-    with st.container(border=True):
-        st.markdown("### 📖 Cara Menghubungkan ke Google Spreadsheet")
-        st.markdown("""
-        Untuk menghubungkan aplikasi ini secara otomatis ke Google Sheets:
-
-        1. **Buat Google Spreadsheet Baru**:
-           - Buat spreadsheet baru di Google Drive Anda.
-           - Buat lembar kerja dengan nama sheet default (misalnya `Sheet1`).
-           - Salin link URL spreadsheet tersebut (misalnya: `https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ/edit`).
-
-        2. **Buat Google Cloud Service Account**:
-           - Kunjungi [Google Cloud Console](https://console.cloud.google.com/).
-           - Aktifkan **Google Sheets API** dan **Google Drive API**.
-           - Masuk ke menu **IAM & Admin** > **Service Accounts** > Buat Service Account baru.
-           - Di tab *Keys*, buat kunci baru bertipe **JSON** dan unduh filenya.
-
-        3. **Bagikan Akses Spreadsheet ke Service Account**:
-           - Buka file Google Spreadsheet Anda.
-           - Klik tombol **Share (Bagikan)** di pojok kanan atas.
-           - Masukkan alamat email service account (berakhiran `@...gserviceaccount.com`).
-           - Berikan peran sebagai **Editor**.
-
-        4. **Konfigurasi `.streamlit/secrets.toml`**:
-           - Buka file `.streamlit/secrets.toml` pada folder proyek ini.
-           - Masukkan konfigurasi berikut:
-           ```toml
-           [connections.gsheets]
-           spreadsheet = "https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_ANDA/edit"
-           type = "service_account"
-           project_id = "your-project-id"
-           private_key_id = "your-private-key-id"
-           private_key = "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n"
-           client_email = "your-service-account@your-project.iam.gserviceaccount.com"
-           client_id = "your-client-id"
-           auth_uri = "https://accounts.google.com/o/oauth2/auth"
-           token_uri = "https://oauth2.googleapis.com/token"
-           auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
-           client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account"
-           ```
-        """)
