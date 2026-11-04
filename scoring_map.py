@@ -236,8 +236,8 @@ CATEGORY_METADATA = {
         "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan Anda dengan rekan kerja dan atasan serta kepemimpinan di lingkungan kerja. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI": {
-        "label": "Antarmuka Kerja Individu",
-        "short": "Antarmuka Kerja",
+        "label": "Keseimbangan Kerja dan Kehidupan Pribadi",
+        "short": "Keseimbangan Kerja dan Kehidupan Pribadi",
         "icon": "💼",
         "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan antara pekerjaan dan kehidupan pribadi Anda, termasuk bagaimana pekerjaan memengaruhi kehidupan di luar pekerjaan dan sebaliknya. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },

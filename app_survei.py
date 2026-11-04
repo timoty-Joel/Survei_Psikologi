@@ -319,7 +319,7 @@ with st.sidebar:
         **📋 Informasi Pengisian:**
         - Jawab setiap butir pernyataan secara jujur sesuai pengalaman kerja Anda.
         - Identitas diri bersifat **rahasia / anonim**.
-        - Estimasi waktu: **5 - 7 menit**.
+        - Estimasi waktu: **15 - 20 menit**.
         """)
         
         st.markdown("<div style='height: 100px;'></div>", unsafe_allow_html=True)
