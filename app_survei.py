@@ -274,7 +274,7 @@ if "submission_result" not in st.session_state:
 # =====================================================================
 with st.sidebar:
     st.markdown("### 🧠 Psikologi Kerja")
-    st.markdown("<p style='font-size:12px; color:#64748b; margin-top:-10px;'>Sistem Penilaian Risiko Psikososial Kerja</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:12px; color:#64748b; margin-top:-10px;'>Sistem Pemetaan Faktor Psikososial dan Stress Kerja</p>", unsafe_allow_html=True)
     st.divider()
 
     if st.session_state["is_admin"]:
@@ -370,7 +370,7 @@ if menu == "📝 Form Survei":
             st.markdown("""
             #### **Yth. Rekan Karyawan / Responden,**
 
-            Kami mengundang Anda untuk berpartisipasi dalam **Survei Evaluasi Risiko Psikososial Kerja**. Survei ini bertujuan untuk memetakan kondisi tuntutan kerja, organisasi kerja, hubungan kerja & kepemimpinan, kepuasan kerja, serta kesehatan dan kesejahteraan psikologis pegawai.
+            Kami mengundang Anda untuk berpartisipasi dalam **Survei Evaluasi Faktor Psikososial dan Stress Kerja**. Survei ini bertujuan untuk memetakan kondisi tuntutan kerja, organisasi kerja, hubungan kerja & kepemimpinan, kepuasan kerja, serta kesehatan dan kesejahteraan psikologis pegawai.
 
             Sebelum melanjutkan, mohon perhatikan ketentuan etika dan kerahasiaan berikut:
             
