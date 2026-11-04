@@ -15,7 +15,7 @@ SCORING_MAP = {
     "10": {"Sangat sesuai": 100, "Cukup sesuai": 67, "Sedikit sesuai": 33, "Tidak sesuai": 0},
 }
 
-PILIHAN_5M = ["Teman Kerja", "Atasan/Pimpinan", "Masyarakat/Pengguna", "Layanan Pihak Luar", "Tidak ada"]
+PILIHAN_5M = ["Teman Kerja", "Atasan/Pimpinan", "Masyarakat/Pengguna", "Layanan Pihak Luar"]
 
 def get_question_options(code):
     """Mengembalikan daftar opsi jawaban berdasarkan kode bobot"""
@@ -117,7 +117,7 @@ SURVEY_QUESTIONS = {
         {"id": "T3_Q23", "text": "Apakah rekan-rekan di tempat kerja bekerja sama dengan baik?", "code": "1", "sub": "Rasa Kebersamaan"},
         {"id": "T3_Q24", "text": "Apakah Anda merasa menjadi bagian dari lingkungan kerja ini?", "code": "1", "sub": "Rasa Kebersamaan"},
     ],
-    "ANTARMUKA KERJA INDIVIDU": [
+    "KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI": [
         {"id": "T4_Q1", "text": "Apakah Anda senang bercerita kepada orang lain tentang tempat Anda bekerja?", "code": "2", "sub": "Komitmen terhadap Tempat Kerja"},
         {"id": "T4_Q2", "text": "Apakah tempat Anda bekerja memiliki arti penting bagi Anda?", "code": "2", "sub": "Komitmen terhadap Tempat Kerja"},
         {"id": "T4_Q3", "text": "Apakah Anda akan menyarankan orang lain untuk melamar pekerjaan di tempat Anda bekerja?", "code": "2", "sub": "Komitmen terhadap Tempat Kerja"},
@@ -221,43 +221,43 @@ CATEGORY_METADATA = {
         "label": "Tuntutan Pekerjaan",
         "short": "Tuntutan Kerja",
         "icon": "⏳",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan tuntutan yang Anda hadapi dalam pekerjaan, seperti beban kerja, kecepatan kerja, tuntutan kognitif, dan tuntutan emosional. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan tuntutan yang Anda hadapi dalam pekerjaan, seperti beban kerja, kecepatan kerja, tuntutan kognitif, dan tuntutan emosional. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "PENGORGANISASIAN KERJA DAN ISI PEKERJAAN": {
         "label": "Pengorganisasian & Isi Kerja",
         "short": "Organisasi Kerja",
         "icon": "📋",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan pengaturan kerja dan karakteristik pekerjaan Anda, seperti kejelasan tugas, kesempatan mengembangkan keterampilan, serta pengaruh dan keleluasaan dalam pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan pengaturan kerja dan karakteristik pekerjaan Anda, seperti kejelasan tugas, kesempatan mengembangkan keterampilan, serta pengaruh dan keleluasaan dalam pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "HUBUNGAN ANTARPRIBADI DAN KEPEMIMPINAN": {
         "label": "Hubungan Antarpribadi & Kepemimpinan",
         "short": "Hubungan & Pemimpin",
         "icon": "🤝",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan Anda dengan rekan kerja dan atasan serta kepemimpinan di lingkungan kerja. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan Anda dengan rekan kerja dan atasan serta kepemimpinan di lingkungan kerja. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
-    "ANTARMUKA KERJA INDIVIDU": {
+    "KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI": {
         "label": "Antarmuka Kerja Individu",
         "short": "Antarmuka Kerja",
         "icon": "💼",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan antara pekerjaan dan kehidupan pribadi Anda, termasuk bagaimana pekerjaan memengaruhi kehidupan di luar pekerjaan dan sebaliknya. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan hubungan antara pekerjaan dan kehidupan pribadi Anda, termasuk bagaimana pekerjaan memengaruhi kehidupan di luar pekerjaan dan sebaliknya. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "MODAL SOSIAL": {
         "label": "Modal Sosial",
         "short": "Modal Sosial",
         "icon": "🏛️",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kepercayaan, kerja sama, dan hubungan sosial di lingkungan kerja, termasuk bagaimana pegawai saling mendukung dalam mencapai tujuan bersama. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kepercayaan, kerja sama, dan hubungan sosial di lingkungan kerja, termasuk bagaimana pegawai saling mendukung dalam mencapai tujuan bersama. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda dalam pekerjaan selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "KONFLIK DAN PERILAKU OFENSIF": {
         "label": "Konflik & Perilaku Ofensif",
         "short": "Konflik & Ofensif",
         "icon": "⚠️",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan konflik dan perilaku tidak menyenangkan yang mungkin Anda alami atau temui di lingkungan kerja, seperti perlakuan yang tidak pantas, pelecehan, atau tindakan lain yang membuat Anda merasa tidak nyaman. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada pengalaman Anda di lingkungan kerja selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan konflik dan perilaku tidak menyenangkan yang mungkin Anda alami atau temui di lingkungan kerja, seperti perlakuan yang tidak pantas, pelecehan, atau tindakan lain yang membuat Anda merasa tidak nyaman. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada pengalaman Anda di lingkungan kerja selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "HEALTH AND WELL-BEING": {
         "label": "Kesehatan & Kesejahteraan (Health & Well-Being)",
         "short": "Kesehatan & Well-being",
         "icon": "❤️",
-        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kondisi kesehatan dan kesejahteraan Anda, termasuk kondisi fisik, psikologis, dan perasaan yang berkaitan dengan pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 3 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
+        "desc": "Berikut ini terdapat sejumlah pernyataan yang berkaitan dengan kondisi kesehatan dan kesejahteraan Anda, termasuk kondisi fisik, psikologis, dan perasaan yang berkaitan dengan pekerjaan. Bacalah setiap pernyataan dengan saksama. Dalam memberikan jawaban, harap merujuk pada kondisi dan pengalaman Anda selama 12 bulan terakhir. Ketentuan keterangan jawaban yaitu sebagai berikut:"
     },
     "PERSONALITY/KEPRIBADIAN": {
         "label": "Kepribadian & Efikasi Diri (Self-Efficacy)",
@@ -271,7 +271,7 @@ DIMENSION_COLUMNS = {
     "TUNTUTAN PEKERJAAN": "Skor_Tuntutan_Kerja",
     "PENGORGANISASIAN KERJA DAN ISI PEKERJAAN": "Skor_Organisasi_Kerja",
     "HUBUNGAN ANTARPRIBADI DAN KEPEMIMPINAN": "Skor_Hubungan_Kepemimpinan",
-    "ANTARMUKA KERJA INDIVIDU": "Skor_Antarmuka_Kerja",
+    "KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI": "Skor_Antarmuka_Kerja",
     "MODAL SOSIAL": "Skor_Modal_Sosial",
     "KONFLIK DAN PERILAKU OFENSIF": "Skor_Konflik_Ofensif",
     "HEALTH AND WELL-BEING": "Skor_Kesehatan_Wellbeing",
@@ -305,7 +305,7 @@ SUBDIMENSIONS_BY_CATEGORY = {
         "Dukungan Sosial Rekan Kerja",
         "Rasa Kebersamaan"
     ],
-    "ANTARMUKA KERJA INDIVIDU": [
+    "KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI": [
         "Komitmen terhadap Tempat Kerja",
         "Keterikatan Kerja",
         "Job Insecurity",
@@ -423,7 +423,7 @@ SUBDIMENSION_POLARITY = {
     "Dukungan Sosial Rekan Kerja": "Favorable",
     "Rasa Kebersamaan": "Favorable",
 
-    # ANTARMUKA KERJA INDIVIDU
+    # KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI
     "Komitmen terhadap Tempat Kerja": "Favorable",
     "Keterikatan Kerja": "Favorable",
     "Job Insecurity": "Unfavorable",
@@ -541,7 +541,7 @@ SUBDIMENSION_LABELS = {
     "Dukungan Sosial Rekan Kerja": {"en": "Social Support from Colleagues", "id": "Dukungan Sosial Rekan Kerja"},
     "Rasa Kebersamaan": {"en": "Sense of Community", "id": "Rasa Kebersamaan Tim"},
 
-    # ANTARMUKA KERJA INDIVIDU
+    # KESEIMBANGAN KERJA DAN KEHIDUPAN PRIBADI
     "Komitmen terhadap Tempat Kerja": {"en": "Commitment to the Workplace", "id": "Komitmen Tempat Kerja"},
     "Keterikatan Kerja": {"en": "Work Engagement", "id": "Keterikatan Kerja"},
     "Job Insecurity": {"en": "Job Insecurity", "id": "Kekhawatiran Kehilangan Pekerjaan"},

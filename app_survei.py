@@ -1213,15 +1213,13 @@ elif menu == "📊 Dashboard Hasil Survei":
     if df_filtered.empty:
         st.warning("⚠️ Tidak ada data yang sesuai dengan kombinasi filter yang dipilih.")
     else:
-        # -------------------------------------------------------------
         # METRIC CARDS
-        # -------------------------------------------------------------
         total_resp = len(df_filtered)
         avg_overall = round(df_filtered["Skor_Rata_Rata_Total"].mean(), 1) if "Skor_Rata_Rata_Total" in df_filtered.columns else 0.0
         avg_health = round(df_filtered["Skor_Kesehatan_Wellbeing"].mean(), 1) if "Skor_Kesehatan_Wellbeing" in df_filtered.columns else 0.0
         avg_demands = round(df_filtered["Skor_Tuntutan_Kerja"].mean(), 1) if "Skor_Tuntutan_Kerja" in df_filtered.columns else 0.0
 
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        col_m1, col_m2 = st.columns(2)
         with col_m1:
             st.markdown(f"""
             <div class="metric-card">
@@ -1234,27 +1232,9 @@ elif menu == "📊 Dashboard Hasil Survei":
         with col_m2:
             st.markdown(f"""
             <div class="metric-card">
-                <div class="metric-title">⭐ Rata-Rata Total Skor</div>
-                <div class="metric-value">{avg_overall} <span style="font-size:16px;color:#64748b;">/100</span></div>
-                <div class="metric-subtitle">Indeks komposit organisasi</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col_m3:
-            st.markdown(f"""
-            <div class="metric-card">
                 <div class="metric-title">❤️ Kesehatan & Well-being</div>
                 <div class="metric-value">{avg_health} <span style="font-size:16px;color:#64748b;">/100</span></div>
                 <div class="metric-subtitle">Indeks kesejahteraan fisik/mental</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with col_m4:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-title">⏳ Tuntutan Kerja</div>
-                <div class="metric-value">{avg_demands} <span style="font-size:16px;color:#64748b;">/100</span></div>
-                <div class="metric-subtitle">Indeks beban & tempo kerja</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1573,59 +1553,6 @@ elif menu == "📊 Dashboard Hasil Survei":
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # -------------------------------------------------------------
-        # GRAFIK 3: ANALISIS INSIDENSI PERILAKU OFENSIF (BAGIAN 6)
-        # -------------------------------------------------------------
-        with st.container(border=True):
-            st.markdown("#### ⚠️ Pemantauan Konflik & Perilaku Ofensif di Tempat Kerja")
-            st.caption("Deteksi paparan insiden perilaku tidak menyenangkan dalam 12 bulan terakhir.")
-
-            offensive_questions = [
-                ("T6_Q1", "Gosip / Fitnah"),
-                ("T6_Q3", "Konflik / Pertengkaran"),
-                ("T6_Q5", "Ejekan"),
-                ("T6_Q7", "Gangguan Online / Pesan"),
-                ("T6_Q9", "Perilaku Seksual"),
-                ("T6_Q11", "Ancaman Kekerasan"),
-                ("T6_Q13", "Kekerasan Fisik"),
-                ("T6_Q15", "Perundungan (Bullying)")
-            ]
-
-            incident_stats = []
-            for qid, label in offensive_questions:
-                if qid in df_filtered.columns:
-                    # Persentase yang bukan 'Tidak ada sama sekali'
-                    total_cnt = len(df_filtered)
-                    exposed = df_filtered[df_filtered[qid] != "Tidak ada sama sekali"]
-                    cnt = len(exposed)
-                    pct = round((cnt / total_cnt) * 100, 1) if total_cnt > 0 else 0
-                    incident_stats.append({
-                        "Jenis Insiden": label,
-                        "Jumlah Responden": cnt,
-                        "Persentase Terpapar (%)": pct
-                    })
-
-            if incident_stats:
-                df_inc = pd.DataFrame(incident_stats)
-                fig_inc = px.bar(
-                    df_inc,
-                    x="Persentase Terpapar (%)",
-                    y="Jenis Insiden",
-                    orientation="h",
-                    color="Persentase Terpapar (%)",
-                    color_continuous_scale="Reds",
-                    text="Persentase Terpapar (%)"
-                )
-                fig_inc.update_traces(texttemplate='%{text}%', textposition='outside')
-                fig_inc.update_layout(
-                    xaxis=dict(range=[0, 100], title="Persentase Responden (%)"),
-                    yaxis=dict(autorange="reversed", title=""),
-                    height=350,
-                    margin=dict(l=20, r=20, t=20, b=20)
-                )
-                st.plotly_chart(fig_inc, use_container_width=True)
-
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # -------------------------------------------------------------
         # GRAFIK 4: ANALISIS KESEHATAN MENTAL SEGMEN 2 (DASS-21)
