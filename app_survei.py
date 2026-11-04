@@ -1054,7 +1054,7 @@ if menu == "📝 Form Survei":
 
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
             st.markdown("### 🌿 Hasil Segmen 2: Kondisi Kesehatan Mental (DASS-21)")
-            st.caption("Skor rentang 0-21 per dimensi dengan kategori standar DASS-21.")
+            st.caption("Skor rentang 0-42 per dimensi (skor total dikalikan 2) dengan kategori standar DASS-21.")
 
             col_d1, col_d2, col_d3 = st.columns(3)
             with col_d1:
@@ -1063,7 +1063,7 @@ if menu == "📝 Form Survei":
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #3b82f6;">
                     <div class="metric-title">🌧️ Depresi</div>
-                    <div class="metric-value">{dep_score} <span style="font-size:16px;color:#64748b;">/ 21</span></div>
+                    <div class="metric-value">{dep_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{dep_sev}</b></div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1074,7 +1074,7 @@ if menu == "📝 Form Survei":
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #f59e0b;">
                     <div class="metric-title">⚡ Kecemasan</div>
-                    <div class="metric-value">{anx_score} <span style="font-size:16px;color:#64748b;">/ 21</span></div>
+                    <div class="metric-value">{anx_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{anx_sev}</b></div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1085,7 +1085,7 @@ if menu == "📝 Form Survei":
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #ef4444;">
                     <div class="metric-title">🔥 Stress</div>
-                    <div class="metric-value">{str_score} <span style="font-size:16px;color:#64748b;">/ 21</span></div>
+                    <div class="metric-value">{str_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{str_sev}</b></div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1105,13 +1105,13 @@ if menu == "📝 Form Survei":
                     "Normal": "#10b981",
                     "Ringan": "#3b82f6",
                     "Sedang": "#f59e0b",
-                    "Parah": "#f97316",
-                    "Sangat Parah": "#ef4444"
+                    "Berat": "#ea580c",
+                    "Sangat Berat": "#dc2626"
                 },
                 text="Skor"
             )
             fig_dass_bar.update_layout(
-                yaxis=dict(range=[0, 21], title="Skor DASS-21 (0 - 21)"),
+                yaxis=dict(range=[0, 44], title="Skor DASS-21 (0 - 42)"),
                 height=280,
                 margin=dict(l=20, r=20, t=20, b=20)
             )
@@ -1250,24 +1250,24 @@ elif menu == "📊 Dashboard Hasil Survei":
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #3b82f6;">
                 <div class="metric-title">🌧️ Rata-Rata Skor Depresi (Segmen 2)</div>
-                <div class="metric-value">{avg_dep} <span style="font-size:16px;color:#64748b;">/21</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 21)</div>
+                <div class="metric-value">{avg_dep} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
             """, unsafe_allow_html=True)
         with col_m6:
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #f59e0b;">
                 <div class="metric-title">⚡ Rata-Rata Skor Kecemasan (Segmen 2)</div>
-                <div class="metric-value">{avg_anx} <span style="font-size:16px;color:#64748b;">/21</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 21)</div>
+                <div class="metric-value">{avg_anx} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
             """, unsafe_allow_html=True)
         with col_m7:
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #ef4444;">
                 <div class="metric-title">🔥 Rata-Rata Skor Stress (Segmen 2)</div>
-                <div class="metric-value">{avg_str} <span style="font-size:16px;color:#64748b;">/21</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 21)</div>
+                <div class="metric-value">{avg_str} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -1570,7 +1570,8 @@ elif menu == "📊 Dashboard Hasil Survei":
                     if not b_df.empty:
                         for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
                             val = round(b_df[col_name].mean(), 1) if col_name in b_df.columns else 0.0
-                            dass_comp_rows.append({"Bidang": b, "Dimensi": dim, "Skor": val})
+                            short_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
+                            dass_comp_rows.append({"Bidang": b, "Dimensi": short_dim, "Skor": val})
 
                 if dass_comp_rows:
                     df_dass_comp = pd.DataFrame(dass_comp_rows)
@@ -1585,7 +1586,7 @@ elif menu == "📊 Dashboard Hasil Survei":
                     )
                     fig_dass_bidang.update_traces(textposition="outside")
                     fig_dass_bidang.update_layout(
-                        yaxis=dict(range=[0, 23], title="Skor Rata-Rata (0 - 21)"),
+                        yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)"),
                         xaxis=dict(title=""),
                         height=360,
                         margin=dict(l=20, r=20, t=40, b=30)
@@ -1597,8 +1598,12 @@ elif menu == "📊 Dashboard Hasil Survei":
                 dim_choice = st.selectbox("Pilih Dimensi untuk Distribusi Keparahan:", ["Depresi", "Kecemasan", "Stress"], key="dash_dass_dim_sel")
                 sev_col = f"Tingkat_{dim_choice}"
                 if sev_col in df_filtered.columns:
-                    sev_counts = df_filtered[sev_col].value_counts().reset_index()
+                    cat_order = ["Normal", "Ringan", "Sedang", "Berat", "Sangat Berat"]
+                    sev_series = pd.Categorical(df_filtered[sev_col], categories=cat_order, ordered=True)
+                    sev_counts = sev_series.value_counts().reset_index()
                     sev_counts.columns = ["Tingkat", "Jumlah"]
+                    sev_counts = sev_counts[sev_counts["Jumlah"] > 0]
+
                     fig_sev_pie = px.pie(
                         sev_counts,
                         names="Tingkat",
@@ -1610,9 +1615,10 @@ elif menu == "📊 Dashboard Hasil Survei":
                             "Normal": "#10b981",
                             "Ringan": "#3b82f6",
                             "Sedang": "#f59e0b",
-                            "Parah": "#f97316",
-                            "Sangat Parah": "#ef4444"
-                        }
+                            "Berat": "#ea580c",
+                            "Sangat Berat": "#dc2626"
+                        },
+                        category_orders={"Tingkat": cat_order}
                     )
                     fig_sev_pie.update_traces(textposition='inside', textinfo='percent+label')
                     fig_sev_pie.update_layout(height=320, margin=dict(l=10, r=10, t=40, b=20))

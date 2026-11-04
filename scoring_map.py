@@ -856,54 +856,65 @@ def calculate_score_segmen2(answer):
 
 def get_dass_severity(dimension, score):
     """
-    Menentukan tingkat keparahan DASS-21 berdasarkan skor total dimensi (0-21):
-    Normal, Ringan, Sedang, Parah, Sangat Parah
+    Menentukan tingkat keparahan DASS-21 berdasarkan skor total dimensi yang telah dikalikan 2 (skala 0-42):
+    - Kecemasan: 0-7 Normal, 8-9 Ringan, 10-14 Sedang, 15-19 Berat, 20+ Sangat Berat
+    - Stres: 0-14 Normal, 15-18 Ringan, 19-25 Sedang, 26-33 Berat, 34+ Sangat Berat
+    - Depresi: 0-9 Normal, 10-13 Ringan, 14-20 Sedang, 21-27 Berat, 28+ Sangat Berat
     """
     if score is None:
         return "Normal"
-    if dimension == "Tingkat Energi dan Suasana Hati":
-        if score <= 4:
+    score = float(score)
+    dim_str = str(dimension).strip()
+
+    # Dimensi Depresi / Tingkat Energi dan Suasana Hati
+    if any(k in dim_str for k in ["Depresi", "Depression", "Energi dan Suasana Hati"]):
+        if score <= 9:
             return "Normal"
-        elif score <= 6:
-            return "Ringan"
-        elif score <= 10:
-            return "Sedang"
         elif score <= 13:
-            return "Parah"
-        else:
-            return "Sangat Parah"
-    elif dimension == "Respons Fisik dan  tingkat Kenyamanan Situasional":
-        if score <= 3:
-            return "Normal"
-        elif score <= 5:
             return "Ringan"
-        elif score <= 7:
+        elif score <= 20:
             return "Sedang"
-        elif score <= 9:
-            return "Parah"
+        elif score <= 27:
+            return "Berat"
         else:
-            return "Sangat Parah"
-    elif dimension == "Pengelolaan Tekanan atau Ketegangan Kerja":
+            return "Sangat Berat"
+
+    # Dimensi Kecemasan / Respons Fisik dan Kenyamanan Situasional
+    elif any(k in dim_str for k in ["Kecemasan", "Anxiety", "Respons Fisik"]):
         if score <= 7:
             return "Normal"
         elif score <= 9:
             return "Ringan"
-        elif score <= 12:
+        elif score <= 14:
             return "Sedang"
-        elif score <= 16:
-            return "Parah"
+        elif score <= 19:
+            return "Berat"
         else:
-            return "Sangat Parah"
+            return "Sangat Berat"
+
+    # Dimensi Stress / Pengelolaan Tekanan atau Ketegangan Kerja
+    elif any(k in dim_str for k in ["Stress", "Stres", "Pengelolaan Tekanan", "Ketegangan Kerja"]):
+        if score <= 14:
+            return "Normal"
+        elif score <= 18:
+            return "Ringan"
+        elif score <= 25:
+            return "Sedang"
+        elif score <= 33:
+            return "Berat"
+        else:
+            return "Sangat Berat"
+
     return "Normal"
 
 def calculate_segmen2_scores(answers_segmen2):
     """
-    Menghitung skor per dimensi untuk Segmen 2 (Total poin 0-21 per dimensi),
-    total skor Segmen 2 (0-63), dan tingkat keparahan DASS-21.
+    Menghitung skor per dimensi untuk Segmen 2 (Total poin dikalikan 2 sehingga rentang 0-42 per dimensi),
+    total skor Segmen 2 (rentang 0-126), dan tingkat keparahan DASS-21 (Normal, Ringan, Sedang, Berat, Sangat Berat).
     """
     dimension_scores = {}
     severity_levels = {}
-    all_scores = []
+    all_raw_scores = []
 
     for dim, questions in SURVEY_QUESTIONS_SEGMEN2.items():
         dim_scores = []
@@ -913,11 +924,76 @@ def calculate_segmen2_scores(answers_segmen2):
             score = calculate_score_segmen2(ans)
             if score is not None:
                 dim_scores.append(score)
-                all_scores.append(score)
+                all_raw_scores.append(score)
 
-        total_dim = sum(dim_scores) if dim_scores else 0
-        dimension_scores[dim] = total_dim
-        severity_levels[dim] = get_dass_severity(dim, total_dim)
+        raw_total_dim = sum(dim_scores) if dim_scores else 0
+        final_dim_score = raw_total_dim * 2  # Total skor dikalikan dua
+        short_name = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
 
-    total_segmen2 = sum(all_scores) if all_scores else 0
+        # Simpan untuk kedua kunci: nama lengkap dimensi dan nama pendek (Depresi, Kecemasan, Stress)
+        dimension_scores[dim] = final_dim_score
+        dimension_scores[short_name] = final_dim_score
+
+        sev = get_dass_severity(dim, final_dim_score)
+        severity_levels[dim] = sev
+        severity_levels[short_name] = sev
+
+    # Total skor Segmen 2 (skor mentah dikalikan dua)
+    total_segmen2 = sum(all_raw_scores) * 2 if all_raw_scores else 0
     return dimension_scores, total_segmen2, severity_levels
+
+def compute_segmen2_for_df(df):
+    """
+    Memastikan kolom Segmen 2 (skor terkalibrasi x2 dan kategori keparahan DASS-21)
+    terhitung dan tersedia di dataframe.
+    """
+    if df is None or df.empty:
+        return df
+
+    # Cek apakah ada butir pertanyaan Segmen 2 di DataFrame (D1..D7, K1..K7, S1..S7)
+    seg2_q_ids = [q["id"] for qs in SURVEY_QUESTIONS_SEGMEN2.values() for q in qs]
+    has_questions = any(qid in df.columns for qid in seg2_q_ids)
+
+    if has_questions:
+        dep_scores, anx_scores, str_scores = [], [], []
+        tot_scores = []
+        dep_levels, anx_levels, str_levels = [], [], []
+
+        for _, row in df.iterrows():
+            ans_seg2 = {c: row[c] for c in seg2_q_ids if c in df.columns and pd.notna(row[c])}
+            scores, total, severities = calculate_segmen2_scores(ans_seg2)
+
+            dep_scores.append(scores.get("Depresi", 0))
+            anx_scores.append(scores.get("Kecemasan", 0))
+            str_scores.append(scores.get("Stress", 0))
+            tot_scores.append(total)
+
+            dep_levels.append(severities.get("Depresi", "Normal"))
+            anx_levels.append(severities.get("Kecemasan", "Normal"))
+            str_levels.append(severities.get("Stress", "Normal"))
+
+        df["Skor_Segmen2_Depresi"] = dep_scores
+        df["Skor_Segmen2_Kecemasan"] = anx_scores
+        df["Skor_Segmen2_Stress"] = str_scores
+        df["Total_Skor_Segmen2"] = tot_scores
+        df["Tingkat_Depresi"] = dep_levels
+        df["Tingkat_Kecemasan"] = anx_levels
+        df["Tingkat_Stress"] = str_levels
+    else:
+        for col_name, dim_key in [("Skor_Segmen2_Depresi", "Depresi"),
+                                  ("Skor_Segmen2_Kecemasan", "Kecemasan"),
+                                  ("Skor_Segmen2_Stress", "Stress")]:
+            if col_name in df.columns:
+                df[col_name] = pd.to_numeric(df[col_name], errors="coerce").fillna(0)
+                if df[col_name].max() <= 21 and (df[col_name] > 0).any():
+                    df[col_name] = df[col_name] * 2
+                df[f"Tingkat_{dim_key}"] = df[col_name].apply(lambda s: get_dass_severity(dim_key, s))
+
+        if "Total_Skor_Segmen2" in df.columns:
+            df["Total_Skor_Segmen2"] = (
+                df.get("Skor_Segmen2_Depresi", 0) +
+                df.get("Skor_Segmen2_Kecemasan", 0) +
+                df.get("Skor_Segmen2_Stress", 0)
+            )
+
+    return df

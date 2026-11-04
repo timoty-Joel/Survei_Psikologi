@@ -24,7 +24,8 @@ from scoring_map import (
     DIMENSION_COLUMNS_SEGMEN2,
     calculate_score_segmen2,
     calculate_segmen2_scores,
-    get_dass_severity
+    get_dass_severity,
+    compute_segmen2_for_df
 )
 
 LOCAL_DATA_FILE = "data_survei.csv"
@@ -133,6 +134,9 @@ def generate_sample_data(num_samples=24):
         record["Total_Skor_Segmen2"] = seg2_total
         for dim, sev in seg2_severity.items():
             record[f"Tingkat_{dim}"] = sev
+        record["Tingkat_Depresi"] = seg2_severity.get("Depresi", "Normal")
+        record["Tingkat_Kecemasan"] = seg2_severity.get("Kecemasan", "Normal")
+        record["Tingkat_Stress"] = seg2_severity.get("Stress", "Normal")
 
         # Tambahkan butir jawaban individual Segmen 1
         for qid, ans in dummy_answers.items():
@@ -177,6 +181,14 @@ def load_data():
                     if col in df_gsheet.columns:
                         df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
 
+                # Lengkapi dan kalibrasi Segmen 2 (skor x2 dan tingkat keparahan)
+                df_gsheet = compute_segmen2_for_df(df_gsheet)
+                for col in DIMENSION_COLUMNS_SEGMEN2.values():
+                    if col in df_gsheet.columns:
+                        df_gsheet[col] = pd.to_numeric(df_gsheet[col], errors="coerce").fillna(0)
+                if "Total_Skor_Segmen2" in df_gsheet.columns:
+                    df_gsheet["Total_Skor_Segmen2"] = pd.to_numeric(df_gsheet["Total_Skor_Segmen2"], errors="coerce").fillna(0)
+
                 return df_gsheet, "Google Sheets"
         except Exception as e:
             st.sidebar.warning(f"Gagal membaca Google Sheets ({e}), beralih ke penyimpanan lokal.")
@@ -202,6 +214,14 @@ def load_data():
                 for col in SUBDIMENSION_COLUMNS.values():
                     if col in df_local.columns:
                         df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
+
+                # Lengkapi dan kalibrasi Segmen 2 (skor x2 dan tingkat keparahan)
+                df_local = compute_segmen2_for_df(df_local)
+                for col in DIMENSION_COLUMNS_SEGMEN2.values():
+                    if col in df_local.columns:
+                        df_local[col] = pd.to_numeric(df_local[col], errors="coerce").fillna(0)
+                if "Total_Skor_Segmen2" in df_local.columns:
+                    df_local["Total_Skor_Segmen2"] = pd.to_numeric(df_local["Total_Skor_Segmen2"], errors="coerce").fillna(0)
 
                 return df_local, "File Lokal (data_survei.csv)"
         except Exception:
@@ -263,6 +283,9 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
     record["Total_Skor_Segmen2"] = seg2_total
     for dim, sev in seg2_severity.items():
         record[f"Tingkat_{dim}"] = sev
+    record["Tingkat_Depresi"] = seg2_severity.get("Depresi", "Normal")
+    record["Tingkat_Kecemasan"] = seg2_severity.get("Kecemasan", "Normal")
+    record["Tingkat_Stress"] = seg2_severity.get("Stress", "Normal")
 
     # Jawaban individual per butir pertanyaan Segmen 1
     for cat, qs in SURVEY_QUESTIONS.items():
