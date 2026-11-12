@@ -857,7 +857,7 @@ def calculate_score_segmen2(answer):
 def get_dass_severity(dimension, score):
     """
     Menentukan tingkat keparahan DASS-21 berdasarkan skor total dimensi yang telah dikalikan 2 (skala 0-42):
-    - Kecemasan: 0-7 Normal, 8-9 Ringan, 10-14 Sedang, 15-19 Berat, 20+ Sangat Berat
+    - Kecemasan: 0-7 Normal, 8-9 Ringan, 10-14 Sedang, 119 Berat, 20+ Sangat Berat
     - Stres: 0-14 Normal, 15-18 Ringan, 19-25 Sedang, 26-33 Berat, 34+ Sangat Berat
     - Depresi: 0-9 Normal, 10-13 Ringan, 14-20 Sedang, 21-27 Berat, 28+ Sangat Berat
     """
