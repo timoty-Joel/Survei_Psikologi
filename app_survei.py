@@ -1719,8 +1719,8 @@ elif menu == "📊 Dashboard Hasil Survei":
         # GRAFIK 4: ANALISIS KESEHATAN MENTAL SEGMEN 2 (DASS-21)
         # -------------------------------------------------------------
         with st.container(border=True):
-            st.markdown("#### 🌿 Analisis Segmen 2: Kondisi Depresi, Kecemasan, & Stress (DASS-21)")
-            st.caption("Pemantauan tingkat Depresi, Kecemasan, dan Stress berdasarkan bidang kerja dan kategori keparahan.")
+            st.markdown("#### 🌿 Analisis Segmen 2: Kondisi Tingkat Energi dan Suasana Hati, Respons Fisik dan  tingkat Kenyamanan Situasional, & Pengelolaan Tekanan atau Ketegangan Kerja (DASS-21)")
+            st.caption("Pemantauan tingkat Tingkat Energi dan Suasana Hati, Respons Fisik dan  tingkat Kenyamanan Situasional, dan Pengelolaan Tekanan atau Ketegangan Kerja berdasarkan bidang kerja dan kategori keparahan.")
 
             col_dass1, col_dass2 = st.columns([3, 2])
             with col_dass1:
