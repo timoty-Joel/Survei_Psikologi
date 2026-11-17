@@ -13,6 +13,10 @@ SCORING_MAP = {
     "8": {str(i): i * 10 for i in range(11)},
     "9": {"Sepanjang waktu": 100, "sebagian besar waktu": 75, "sebagian waktu": 50, "sebagian kecil waktu": 25, "sama sekali tidak": 0},
     "10": {"Sangat sesuai": 100, "Cukup sesuai": 67, "Sedikit sesuai": 33, "Tidak sesuai": 0},
+    "R1": {"Selalu": 0, "Sering": 0, "Kadang-kadang": 0, "Jarang": 0, "Tidak Pernah": 0},
+    "R2": {"Dalam tingkat yang sangat besar": 0, "Dalam tingkat yang besar": 0, "Sedang": 0, "Dalam tingkat yang kecil": 0, "Dalam tingkat yang sangat kecil": 0},
+    "R3": {"Sepanjang waktu": 0, "Sebagian besar waktu": 0, "Sebagian waktu": 0, "Sebagian kecil waktu": 0, "Sama sekali tidak": 0},
+    "R4": {"Sesuai dengan diri saya sampai tingkat tertentu atau kadang-kadang": 0, "Sesuai dengan diri saya sampai tingkat cukup besar atau sering": 0, "Sangat sesuai dengan diri saya atau hampir selalu": 0}
 }
 
 PILIHAN_5M = ["Teman Kerja", "Atasan/Pimpinan", "Masyarakat/Pengguna", "Layanan Pihak Luar"]
@@ -52,6 +56,7 @@ BIDANG_OPTIONS = ["Keselamatan Kerja", "Kesehatan Kerja", "Ergonomi & Psikologi"
 # questions
 SURVEY_QUESTIONS = {
     "TUNTUTAN PEKERJAAN": [
+        {"id": "RAN1", "text": "Silakan pilih sering dalam pertanyaan ini :", "code": "R1", "sub": "Tambahan"},     
         {"id": "T1_Q1", "text": "Apakah pekerjaan Anda sering menumpuk karena pembagian beban kerja tidak merata?", "code": "1", "sub": "Tuntutan Kuantitatif"},
         {"id": "T1_Q2", "text": "Seberapa sering Anda tidak memiliki cukup waktu untuk menyelesaikan semua tugas pekerjaan?", "code": "1", "sub": "Tuntutan Kuantitatif"},
         {"id": "T1_Q3", "text": "Seberapa sering pekerjaan Anda tertunda atau belum selesai sesuai rencana?", "code": "1", "sub": "Tuntutan Kuantitatif"},
@@ -72,6 +77,7 @@ SURVEY_QUESTIONS = {
         {"id": "T1_Q18", "text": "Apakah Anda harus menahan diri untuk tidak menyampaikan pendapat saat bekerja?", "code": "1", "sub": "Tuntutan untuk Menyembunyikan Emosi"},
     ],
     "PENGORGANISASIAN KERJA DAN ISI PEKERJAAN": [
+        {"id": "RAN2", "text": "Saya fokus dalam mengerjakan survey ini, pilih jawaban Tidak pernah :", "code": "R1", "sub": "Tambahan"},
         {"id": "T2_Q1", "text": "Apakah Anda memiliki kesempatan untuk ikut memengaruhi keputusan yang berkaitan dengan pekerjaan Anda?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
         {"id": "T2_Q2", "text": "Apakah Anda dapat ikut menentukan dengan siapa Anda bekerja?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
         {"id": "T2_Q3", "text": "Apakah Anda dapat memengaruhi banyaknya pekerjaan yang diberikan kepada Anda?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
@@ -102,6 +108,7 @@ SURVEY_QUESTIONS = {
         {"id": "T3_Q8", "text": "Apakah Anda memahami dengan jelas apa yang diharapkan dari Anda dalam pekerjaan?", "code": "2", "sub": "Kejelasan Peran"},
         {"id": "T3_Q9", "text": "Apakah Anda menerima tuntutan pekerjaan yang saling bertentangan?", "code": "2", "sub": "Konflik Peran"},
         {"id": "T3_Q10", "text": "Apakah Anda terkadang harus melakukan pekerjaan dengan cara yang menurut Anda kurang tepat?", "code": "2", "sub": "Konflik Peran"},
+        {"id": "RAN3", "text": "Saya jawab dengan jujur, pilih jawaban Dalam tingkat yang besar :", "code": "R2", "sub": "Tambahan"},
         {"id": "T3_Q11", "text": "Apakah Anda terkadang harus mengerjakan sesuatu yang menurut Anda tidak diperlukan?", "code": "2", "sub": "Tugas Tidak Sah"},
         {"id": "T3_Q12", "text": "Apakah atasan langsung Anda memastikan bahwa Anda memiliki kesempatan untuk mengembangkan kemampuan?", "code": "2", "sub": "Kualitas Kepemimpinan", "sub_note": "Sejauh mana Anda menilai bahwa atasan langsung Anda:"},
         {"id": "T3_Q13", "text": "Apakah atasan langsung Anda mengutamakan kepuasan kerja staf?", "code": "2", "sub": "Kualitas Kepemimpinan"},
@@ -146,6 +153,7 @@ SURVEY_QUESTIONS = {
         {"id": "T4_Q26", "text": "Apakah pekerjaan menyita banyak waktu hingga mengganggu kehidupan pribadi Anda?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
         {"id": "T4_Q27", "text": "Apakah tuntutan pekerjaan mengganggu kehidupan pribadi atau keluarga Anda?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
         {"id": "T4_Q28", "text": "Apakah urusan pekerjaan membuat Anda harus mengubah rencana kegiatan pribadi atau keluarga?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
+        {"id": "RAN4", "text": "Silakan pilih Sebagian waktu dalam pertanyaan ini :", "code": "R3", "sub": "Tambahan"},         
     ],
     "MODAL SOSIAL": [
         {"id": "T5_Q1", "text": "Apakah pegawai saling menahan atau tidak membagikan informasi yang seharusnya diketahui bersama?", "code": "2R", "sub": "Kepercayaan Horizontal"},
@@ -180,6 +188,7 @@ SURVEY_QUESTIONS = {
         {"id": "T6_Q17", "text": "Seberapa sering Anda merasa dikritik secara tidak adil, diintimidasi, atau dipermalukan di depan orang lain oleh rekan kerja atau atasan?", "code": "1", "sub": "Perundungan"}, 
     ],
     "HEALTH AND WELL-BEING": [
+        {"id": "RAN5", "text": "Saya jawab dengan jujur, pilih jawaban sesuai dengan diri saya sampai tingkat yang cukup besar :", "code": "R4", "sub": "Tambahan"},    
         {"id": "T7_Q1", "text": "Secara umum, bagaimana Anda menilai kondisi kesehatan Anda saat ini?", "code": "7", "sub": "Kesehatan yang Dinilai Diri Sendiri"},
         {"id": "T7_Q2", "text": "Jika kondisi kesehatan terbaik yang dapat Anda bayangkan diberi nilai 10 dan kondisi terburuk diberi nilai 0, berapa nilai yang Anda berikan untuk kondisi kesehatan Anda saat ini?", "code": "8", "sub": "Kesehatan yang Dinilai Diri Sendiri"},
         {"id": "T7_Q3", "text": "Seberapa sering tidur Anda terasa tidak nyenyak atau gelisah?", "code": "9", "sub": "Masalah Tidur", "sub_note": "Pertanyaan berikut menanyakan keadaan Anda selama empat minggu terakhir:"},
