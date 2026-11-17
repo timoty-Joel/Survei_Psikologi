@@ -287,8 +287,7 @@ with st.sidebar:
         menu = st.radio(
             "Pilih Halaman:",
             options=admin_options,
-            index=current_idx,
-            key="admin_menu_selector"
+            index=current_idx
         )
         st.session_state["active_menu"] = menu
 
@@ -1027,221 +1026,92 @@ if menu == "📝 Form Survei":
                         st.rerun()
 
     # -------------------------------------------------------------
-    # STEP 11: HASIL SUBMIT & PROFIL RADAR INDIVIDU
+    # STEP 11: HALAMAN TERIMA KASIH (SELESAI PENGISIAN)
     # -------------------------------------------------------------
     elif curr_step == 11:
         res = st.session_state["submission_result"]
         st.balloons()
 
-        st.success("🎉 Terima kasih! Jawaban survei Anda (Segmen 1 & Segmen 2) telah berhasil disimpan.")
-        
-        # Info penyimpanan
-        if res and res.get("gsheet_saved"):
-            st.caption("✅ Data telah berhasil disinkronkan ke Google Spreadsheet dan backup lokal.")
-        else:
-            st.caption("✅ Data telah tersimpan secara aman di penyimpanan lokal (data_survei.csv).")
+        # Banner Utama Terima Kasih
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 36px 28px; border-radius: 16px; color: white; text-align: center; margin-bottom: 24px; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.22);">
+            <div style="font-size: 56px; margin-bottom: 10px;">🎉</div>
+            <h2 style="color: white; margin: 0 0 10px 0; font-size: 26px; font-weight: 700;">Terima Kasih Atas Partisipasi Anda!</h2>
+            <p style="color: #ecfdf5; font-size: 15.5px; margin: 0 auto; max-width: 680px; line-height: 1.6;">
+                Jawaban kuesioner Anda untuk <b>Segmen 1 (Faktor Psikososial Kerja)</b> dan <b>Segmen 2 (Kesehatan Mental Kerja)</b> telah berhasil dikirim dan tersimpan dengan aman ke dalam sistem database.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # Visualisasi Skor Segmen 1
-        if res and "cat_scores" in res:
-            cat_scores = res["cat_scores"]
-            overall_score = res.get("overall_score", 0)
+        # Informasi Tanda Terima Pengisian (Receipt Information)
+        id_resp = res.get("id_responden", "-") if res else "-"
+        waktu_sekarang = datetime.now().strftime("%d %B %Y, %H:%M WIB")
+        bidang_user = st.session_state.get("biodata", {}).get("bidang", "-")
+        storage_info = "Tersinkronisasi ke Google Spreadsheet & Database Lokal" if (res and res.get("gsheet_saved")) else "Tersimpan di Database Lokal Sistem"
 
-            st.markdown("### 📊 Hasil Segmen 1: Profil Risiko Psikososial Kerja")
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1:
+            st.markdown(f"""
+            <div class="metric-card" style="border-left: 4px solid #10b981;">
+                <div class="metric-title">🏷️ ID Responden</div>
+                <div class="metric-value" style="font-size: 22px;">{id_resp}</div>
+                <div class="metric-subtitle">Nomor bukti pengisian survei</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            col_sc1, col_sc2 = st.columns([1, 2])
-            with col_sc1:
-                with st.container(border=True):
-                    st.markdown("#### 🏆 Ringkasan Skor Segmen 1")
-                    st.metric("ID Responden", res.get("id_responden", "-"))
-                    st.metric("Skor Rata-Rata Total", f"{overall_score} / 100")
-                    st.divider()
-                    st.caption("Skor dihitung dari skala 0 (Terendah) sampai 100 (Tertinggi) berdasarkan bobot penilaian standar psikososial kerja.")
+        with col_r2:
+            st.markdown(f"""
+            <div class="metric-card" style="border-left: 4px solid #3b82f6;">
+                <div class="metric-title">🏢 Asal Bidang Kerja</div>
+                <div class="metric-value" style="font-size: 18px; word-break: break-word;">{bidang_user}</div>
+                <div class="metric-subtitle">Unit / Bidang Responden</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            with col_sc2:
-                # Radar Chart Skor Pribadi
-                categories = [CATEGORY_METADATA[k]["short"] for k in categories_list]
-                scores = [cat_scores.get(k, 0) for k in categories_list]
-                categories_closed = categories + [categories[0]]
-                scores_closed = scores + [scores[0]]
-
-                fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(
-                    r=scores_closed,
-                    theta=categories_closed,
-                    fill='toself',
-                    fillcolor='rgba(37, 99, 235, 0.25)',
-                    line=dict(color='#2563eb', width=2),
-                    name='Skor Anda'
-                ))
-                fig_radar.update_layout(
-                    polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-                    showlegend=False,
-                    title="Grafik Radar Profil Psikososial Anda (Segmen 1)",
-                    margin=dict(l=40, r=40, t=50, b=40),
-                    height=360
-                )
-                st.plotly_chart(fig_radar, use_container_width=True)
-
-            # Visualisasi Rincian Skor per Sub-Dimensi Segmen 1
-            sub_scores = res.get("sub_scores") if res else None
-            if not sub_scores and res and "answers" in st.session_state:
-                sub_scores = calculate_subdimension_scores(st.session_state["answers"])
-
-            if sub_scores:
-                with st.expander("🔬 Lihat Visualisasi Barchart Horizontal Sub-Dimensi (45 Sub-Bidang)", expanded=True):
-                    st.caption("Visualisasi barchart horizontal per sub-bidang dengan batas kategori **Rendah (0 - 33,33)**, **Sedang (33,34 - 66,66)**, dan **Tinggi (66,67 - 100)**.")
-
-                    selected_view_cat = st.selectbox(
-                        "Pilih Dimensi untuk Melihat Detail Sub-Bidang:",
-                        options=categories_list,
-                        format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
-                        key="resp_sub_dim_selector"
-                    )
-
-                    c_meta = CATEGORY_METADATA.get(selected_view_cat, {"label": selected_view_cat, "icon": "📁"})
-                    sub_list = SUBDIMENSIONS_BY_CATEGORY.get(selected_view_cat, [])
-
-                    resp_chart_items = []
-                    resp_tbl_rows = []
-                    for idx, s in enumerate(sub_list, 1):
-                        val = float(sub_scores.get(s, 0.0))
-                        lbl_info = SUBDIMENSION_LABELS.get(s, {"en": s, "id": s})
-                        disp_name = f"{lbl_info['en']} ({lbl_info['id']})"
-                        lvl = get_score_level(val)
-                        pol = SUBDIMENSION_POLARITY.get(s, "Favorable")
-                        _, stat_text, clr = get_subdimension_status(s, val)
-
-                        resp_chart_items.append({
-                            "name": disp_name,
-                            "score": val,
-                            "level": lvl,
-                            "color": clr,
-                            "polarity": pol,
-                            "status": stat_text
-                        })
-                        resp_tbl_rows.append({
-                            "No": idx,
-                            "Sub-Bidang": disp_name,
-                            "Sifat": pol,
-                            "Skor Anda": val,
-                            "Kategori": lvl,
-                            "Status Risiko": stat_text
-                        })
-
-                    fig_resp_hbar = go.Figure()
-                    fig_resp_hbar.add_trace(go.Bar(
-                        y=[it["name"] for it in resp_chart_items],
-                        x=[it["score"] for it in resp_chart_items],
-                        orientation="h",
-                        marker=dict(
-                            color=[it["color"] for it in resp_chart_items],
-                            line=dict(color="rgba(0,0,0,0.15)", width=1)
-                        ),
-                        text=[f" <b>{it['score']:.1f}</b> ({it['level']})" for it in resp_chart_items],
-                        textposition="outside",
-                        cliponaxis=False,
-                        customdata=[[it["level"], it["polarity"], it["status"]] for it in resp_chart_items],
-                        hovertemplate="<b>%{y}</b><br>Skor Anda: <b>%{x:.1f}</b> / 100<br>Kategori: <b>%{customdata[0]}</b><br>Sifat: %{customdata[1]}<br>Status: %{customdata[2]}<extra></extra>"
-                    ))
-
-                    fig_resp_hbar.add_vline(x=33.33, line_dash="dash", line_color="#94a3b8", line_width=1.5,
-                                            annotation_text="Batas Rendah (33.33)", annotation_position="top right")
-                    fig_resp_hbar.add_vline(x=66.67, line_dash="dash", line_color="#94a3b8", line_width=1.5,
-                                            annotation_text="Batas Tinggi (66.67)", annotation_position="top right")
-
-                    fig_resp_hbar.update_layout(
-                        title=dict(
-                            text=f"Detail Subdimensi: {c_meta.get('label', selected_view_cat)}",
-                            font=dict(size=15, color="#0f172a")
-                        ),
-                        xaxis=dict(range=[0, 115], title="Skor Penilaian (0 - 100)", gridcolor="#f1f5f9"),
-                        yaxis=dict(title="", autorange="reversed", tickfont=dict(size=12)),
-                        height=max(320, len(sub_list) * 55),
-                        margin=dict(l=20, r=40, t=60, b=40),
-                        plot_bgcolor="white",
-                        paper_bgcolor="white"
-                    )
-                    st.plotly_chart(fig_resp_hbar, use_container_width=True)
-                    st.dataframe(pd.DataFrame(resp_tbl_rows), use_container_width=True, hide_index=True)
-
-        # Visualisasi Skor Segmen 2
-        if res and "seg2_scores" in res:
-            seg2_scores = res["seg2_scores"]
-            seg2_severity = res.get("seg2_severity", {})
-
-            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            st.markdown("### 🌿 Hasil Segmen 2: Kondisi Kesehatan Mental (DASS-21)")
-            st.caption("Skor rentang 0-42 per dimensi (skor total dikalikan 2) dengan kategori standar DASS-21.")
-
-            col_d1, col_d2, col_d3 = st.columns(3)
-            with col_d1:
-                dep_score = seg2_scores.get("Depresi", 0)
-                dep_sev = seg2_severity.get("Depresi", "Normal")
-                st.markdown(f"""
-                <div class="metric-card" style="border-left: 4px solid #3b82f6;">
-                    <div class="metric-title">🌧️ Dimensi Tingkat Energi dan Suasana Hati</div>
-                    <div class="metric-value">{dep_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
-                    <div class="metric-subtitle">Tingkat: <b>{dep_sev}</b></div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col_d2:
-                anx_score = seg2_scores.get("Kecemasan", 0)
-                anx_sev = seg2_severity.get("Kecemasan", "Normal")
-                st.markdown(f"""
-                <div class="metric-card" style="border-left: 4px solid #f59e0b;">
-                    <div class="metric-title">⚡ Dimensi Pengelolaan Tekanan dan Ketegangan Kerja</div>
-                    <div class="metric-value">{anx_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
-                    <div class="metric-subtitle">Tingkat: <b>{anx_sev}</b></div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col_d3:
-                str_score = seg2_scores.get("Stress", 0)
-                str_sev = seg2_severity.get("Stress", "Normal")
-                st.markdown(f"""
-                <div class="metric-card" style="border-left: 4px solid #ef4444;">
-                    <div class="metric-title">🔥 Dimensi Respon Fisik dan Tingkat Kenyamanan Situasional</div>
-                    <div class="metric-value">{str_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
-                    <div class="metric-subtitle">Tingkat: <b>{str_sev}</b></div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # Bar Chart Visualisasi DASS-21
-            dass_df = pd.DataFrame([
-                {"Dimensi": "Depresi", "Skor": dep_score, "Tingkat": dep_sev},
-                {"Dimensi": "Kecemasan", "Skor": anx_score, "Tingkat": anx_sev},
-                {"Dimensi": "Stress", "Skor": str_score, "Tingkat": str_sev}
-            ])
-            fig_dass_bar = px.bar(
-                dass_df,
-                x="Dimensi",
-                y="Skor",
-                color="Tingkat",
-                color_discrete_map={
-                    "Normal": "#10b981",
-                    "Ringan": "#3b82f6",
-                    "Sedang": "#f59e0b",
-                    "Berat": "#ea580c",
-                    "Sangat Berat": "#dc2626"
-                },
-                text="Skor"
-            )
-            fig_dass_bar.update_layout(
-                yaxis=dict(range=[0, 44], title="Skor DASS-21 (0 - 42)"),
-                height=280,
-                margin=dict(l=20, r=20, t=20, b=20)
-            )
-            st.plotly_chart(fig_dass_bar, use_container_width=True)
+        with col_r3:
+            st.markdown(f"""
+            <div class="metric-card" style="border-left: 4px solid #f59e0b;">
+                <div class="metric-title">🕒 Waktu Pengiriman</div>
+                <div class="metric-value" style="font-size: 17px;">{waktu_sekarang}</div>
+                <div class="metric-subtitle">Status: Berhasil Terkirim</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-        if st.button("📝 Isi Survei untuk Responden Baru", use_container_width=True):
-            st.session_state["consent_given"] = False
-            st.session_state["step"] = 0
-            st.session_state["answers"] = {}
-            st.session_state["answers_segmen2"] = {}
-            st.session_state["submission_result"] = None
-            st.rerun()
+
+        # Informasi Tambahan & Jaminan Kerahasiaan
+        with st.container(border=True):
+            st.markdown("#### ℹ️ Catatan & Informasi untuk Responden")
+            st.markdown("""
+            * 🛡️ **Kerahasiaan & Anonimitas Terjamin**:
+              Seluruh data, respon, dan jawaban yang Anda berikan bersifat **rahasia dan anonim**. Data diolah secara agregat (kelompok) oleh tim pengkaji K3 dan Ergonomi untuk mengevaluasi iklim lingkungan kerja organisasi, bukan untuk evaluasi kinerja personal individu.
+            * 🤝 **Apresiasi Atas Kontribusi Nyata Anda**:
+              Partisipasi jujur dan objektif Anda sangat berharga dalam membantu organisasi mengidentifikasi potensi risiko beban kerja dan tuntutan psikososial, serta merumuskan program perbaikan lingkungan kerja yang lebih aman, nyaman, dan sehat.
+            * 🌿 **Dukungan Kesejahteraan & Layanan K3**:
+              Bina Pengujian K3 senantiasa berkomitmen untuk mendukung kesejahteraan dan keselamatan seluruh pegawai. Apabila Anda memerlukan informasi lebih lanjut mengenai kenyamanan ergonomi atau konsultasi kesehatan kerja, silakan hubungi tim Keselamatan dan Kesehatan Kerja (K3).
+            """)
+            st.caption(f"Status Sistem: {storage_info}")
+
+        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+
+        # Tombol Aksi
+        col_act1, col_act2 = st.columns([1, 1])
+        with col_act1:
+            if st.button("📝 Isi Survei untuk Responden Baru", use_container_width=True, type="primary"):
+                st.session_state["consent_given"] = False
+                st.session_state["step"] = 0
+                st.session_state["answers"] = {}
+                st.session_state["answers_segmen2"] = {}
+                st.session_state["submission_result"] = None
+                st.rerun()
+
+        with col_act2:
+            if st.session_state.get("is_admin", False):
+                if st.button("📊 Buka Dashboard Analisis (Mode Admin)", use_container_width=True):
+                    st.session_state["active_menu"] = "📊 Dashboard Hasil Survei"
+                    st.rerun()
+            else:
+                st.caption("🔒 *Hasil rekapitulasi data agregat dan analisis statistik hanya dapat diakses oleh Administrator.*")
 
 # =====================================================================
 # 5. HALAMAN 2: DASHBOARD ANALISIS & REKAPITULASI
