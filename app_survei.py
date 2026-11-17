@@ -1179,7 +1179,7 @@ if menu == "📝 Form Survei":
                 dep_sev = seg2_severity.get("Depresi", "Normal")
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #3b82f6;">
-                    <div class="metric-title">🌧️ Depresi</div>
+                    <div class="metric-title">🌧️ Dimensi Tingkat Energi dan Suasana Hati</div>
                     <div class="metric-value">{dep_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{dep_sev}</b></div>
                 </div>
@@ -1190,7 +1190,7 @@ if menu == "📝 Form Survei":
                 anx_sev = seg2_severity.get("Kecemasan", "Normal")
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #f59e0b;">
-                    <div class="metric-title">⚡ Kecemasan</div>
+                    <div class="metric-title">⚡ Dimensi Pengelolaan Tekanan dan Ketegangan Kerja</div>
                     <div class="metric-value">{anx_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{anx_sev}</b></div>
                 </div>
@@ -1201,7 +1201,7 @@ if menu == "📝 Form Survei":
                 str_sev = seg2_severity.get("Stress", "Normal")
                 st.markdown(f"""
                 <div class="metric-card" style="border-left: 4px solid #ef4444;">
-                    <div class="metric-title">🔥 Stress</div>
+                    <div class="metric-title">🔥 Dimensi Respon Fisik dan Tingkat Kenyamanan Situasional</div>
                     <div class="metric-value">{str_score} <span style="font-size:16px;color:#64748b;">/ 42</span></div>
                     <div class="metric-subtitle">Tingkat: <b>{str_sev}</b></div>
                 </div>
@@ -1771,7 +1771,7 @@ elif menu == "📊 Dashboard Hasil Survei":
                         names="Tingkat",
                         values="Jumlah",
                         hole=0.4,
-                        title=f"Distribusi Tingkat {dim_choice}",
+                        title=f"Distribusi Tingkat Gejala",
                         color="Tingkat",
                         color_discrete_map={
                             "Normal": "#10b981",

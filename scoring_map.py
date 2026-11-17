@@ -818,19 +818,19 @@ SURVEY_QUESTIONS_SEGMEN2 = {
 
 CATEGORY_METADATA_SEGMEN2 = {
     "Tingkat Energi dan Suasana Hati": {
-        "label": "Tingkat Energi dan Suasana Hati (Depression)",
+        "label": "Tingkat Energi dan Suasana Hati",
         "short": "Depresi",
         "icon": "🌧️",
         "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan suasana hati dan perasaan sedih atau kehilangan minat. Nilailah seberapa sesuai dengan kondisi Anda."
     },
     "Respons Fisik dan  tingkat Kenyamanan Situasional": {
-        "label": "Respons Fisik dan  tingkat Kenyamanan Situasional (Anxiety)",
+        "label": "Respons Fisik dan  tingkat Kenyamanan Situasional",
         "short": "Kecemasan",
         "icon": "⚡",
         "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan reaksi kecemasan, kegugupan, dan ketakutan fisik tubuh. Nilailah seberapa sesuai dengan kondisi Anda."
     },
     "Pengelolaan Tekanan atau Ketegangan Kerja": {
-        "label": "Pengelolaan Tekanan atau Ketegangan Kerja (Stress)",
+        "label": "Pengelolaan Tekanan atau Ketegangan Kerja",
         "short": "Stress",
         "icon": "🔥",
         "desc": "Berikut ini terdapat sejumlah butir yang berkaitan dengan ketegangan fisik/emosional dan iritabilitas. Nilailah seberapa sesuai dengan kondisi Anda."
@@ -839,7 +839,7 @@ CATEGORY_METADATA_SEGMEN2 = {
 
 DIMENSION_COLUMNS_SEGMEN2 = {
     "Tingkat Energi dan Suasana Hati": "Skor_Segmen2_Depresi",
-    "Respons Fisik dan  tingkat Kenyamanan Situasional": "Skor_Segmen2_Kecemasan",
+    "Respons Fisik dan Tingkat Kenyamanan Situasional": "Skor_Segmen2_Kecemasan",
     "Pengelolaan Tekanan atau Ketegangan Kerja": "Skor_Segmen2_Stress"
 }
 
