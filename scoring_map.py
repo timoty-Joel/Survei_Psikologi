@@ -55,8 +55,7 @@ BIDANG_OPTIONS = ["Keselamatan Kerja", "Kesehatan Kerja", "Ergonomi & Psikologi"
 
 # questions
 SURVEY_QUESTIONS = {
-    "TUNTUTAN PEKERJAAN": [
-        {"id": "RAN1", "text": "Silakan pilih sering dalam pertanyaan ini :", "code": "R1", "sub": "Tambahan"},     
+    "TUNTUTAN PEKERJAAN": [     
         {"id": "T1_Q1", "text": "Apakah pekerjaan Anda sering menumpuk karena pembagian beban kerja tidak merata?", "code": "1", "sub": "Tuntutan Kuantitatif"},
         {"id": "T1_Q2", "text": "Seberapa sering Anda tidak memiliki cukup waktu untuk menyelesaikan semua tugas pekerjaan?", "code": "1", "sub": "Tuntutan Kuantitatif"},
         {"id": "T1_Q3", "text": "Seberapa sering pekerjaan Anda tertunda atau belum selesai sesuai rencana?", "code": "1", "sub": "Tuntutan Kuantitatif"},
@@ -66,6 +65,7 @@ SURVEY_QUESTIONS = {
         {"id": "T1_Q7", "text": "Apakah Anda harus terus bekerja dengan cepat?", "code": "2", "sub": "Laju Kerja"},
         {"id": "T1_Q8", "text": "Apakah saat bekerja Anda harus memperhatikan banyak hal sekaligus?", "code": "1", "sub": "Tuntutan Kognitif"},
         {"id": "T1_Q9", "text": "Apakah pekerjaan Anda mengharuskan Anda mengingat banyak informasi atau hal?", "code": "1", "sub": "Tuntutan Kognitif"},
+        {"id": "T1_Q", "text": "Silakan pilih sering dalam pertanyaan ini :", "code": "R1", "sub": "Tuntutan Kognitif"},
         {"id": "T1_Q10", "text": "Apakah pekerjaan Anda menuntut Anda untuk menghasilkan ide-ide baru?", "code": "1", "sub": "Tuntutan Kognitif"},
         {"id": "T1_Q11", "text": "Apakah pekerjaan Anda mengharuskan Anda mengambil keputusan yang sulit?", "code": "1", "sub": "Tuntutan Kognitif"},
         {"id": "T1_Q12", "text": "Apakah pekerjaan Anda membuat Anda menghadapi situasi yang mengganggu perasaan?", "code": "1", "sub": "Tuntutan Emosional"},
@@ -77,7 +77,6 @@ SURVEY_QUESTIONS = {
         {"id": "T1_Q18", "text": "Apakah Anda harus menahan diri untuk tidak menyampaikan pendapat saat bekerja?", "code": "1", "sub": "Tuntutan untuk Menyembunyikan Emosi"},
     ],
     "PENGORGANISASIAN KERJA DAN ISI PEKERJAAN": [
-        {"id": "RAN2", "text": "Saya fokus dalam mengerjakan survey ini, pilih jawaban Tidak pernah :", "code": "R1", "sub": "Tambahan"},
         {"id": "T2_Q1", "text": "Apakah Anda memiliki kesempatan untuk ikut memengaruhi keputusan yang berkaitan dengan pekerjaan Anda?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
         {"id": "T2_Q2", "text": "Apakah Anda dapat ikut menentukan dengan siapa Anda bekerja?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
         {"id": "T2_Q3", "text": "Apakah Anda dapat memengaruhi banyaknya pekerjaan yang diberikan kepada Anda?", "code": "1", "sub": "Pengaruh di Tempat Kerja"},
@@ -95,7 +94,7 @@ SURVEY_QUESTIONS = {
         {"id": "T2_Q15", "text": "Jika ada urusan pribadi, apakah Anda dapat meninggalkan tempat kerja selama sekitar 30 menit tanpa harus meminta izin khusus?", "code": "1", "sub": "Kendali atas Waktu Kerja"},
         {"id": "T2_Q16", "text": "Apakah Anda perlu bekerja melebihi jam kerja yang ditetapkan (lembur)?", "code": "1R", "sub": "Kendali atas Waktu Kerja"},
         {"id": "T2_Q17", "text": "Apakah pekerjaan yang Anda lakukan terasa bermakna?", "code": "2", "sub": "Makna Kerja"},
-        {"id": "T2_Q18", "text": "Apakah Anda merasa pekerjaan yang Anda lakukan itu penting?", "code": "2", "sub": "Makna Kerja"},
+        {"id": "T2_Q18", "text": "Apakah Anda merasa pekerjaan yang Anda lakukan itu penting?", "code": "2", "sub": "Makna Kerja"}
     ],
     "HUBUNGAN ANTARPRIBADI DAN KEPEMIMPINAN": [
         {"id": "T3_Q1", "text": "Apakah Anda mendapat informasi lebih awal tentang keputusan penting, perubahan, atau rencana di tempat kerja?", "code": "2", "sub": "Prediktabilitas"},
@@ -108,7 +107,6 @@ SURVEY_QUESTIONS = {
         {"id": "T3_Q8", "text": "Apakah Anda memahami dengan jelas apa yang diharapkan dari Anda dalam pekerjaan?", "code": "2", "sub": "Kejelasan Peran"},
         {"id": "T3_Q9", "text": "Apakah Anda menerima tuntutan pekerjaan yang saling bertentangan?", "code": "2", "sub": "Konflik Peran"},
         {"id": "T3_Q10", "text": "Apakah Anda terkadang harus melakukan pekerjaan dengan cara yang menurut Anda kurang tepat?", "code": "2", "sub": "Konflik Peran"},
-        {"id": "RAN3", "text": "Saya jawab dengan jujur, pilih jawaban Dalam tingkat yang besar :", "code": "R2", "sub": "Tambahan"},
         {"id": "T3_Q11", "text": "Apakah Anda terkadang harus mengerjakan sesuatu yang menurut Anda tidak diperlukan?", "code": "2", "sub": "Tugas Tidak Sah"},
         {"id": "T3_Q12", "text": "Apakah atasan langsung Anda memastikan bahwa Anda memiliki kesempatan untuk mengembangkan kemampuan?", "code": "2", "sub": "Kualitas Kepemimpinan", "sub_note": "Sejauh mana Anda menilai bahwa atasan langsung Anda:"},
         {"id": "T3_Q13", "text": "Apakah atasan langsung Anda mengutamakan kepuasan kerja staf?", "code": "2", "sub": "Kualitas Kepemimpinan"},
@@ -118,6 +116,7 @@ SURVEY_QUESTIONS = {
         {"id": "T3_Q17", "text": "Seberapa sering Anda mendapat bantuan atau dukungan dari atasan langsung ketika membutuhkannya?", "code": "1", "sub": "Dukungan Sosial Atasan"},
         {"id": "T3_Q18", "text": "Seberapa sering atasan langsung Anda membahas dengan Anda bagaimana pekerjaan Anda dilakukan?", "code": "1", "sub": "Dukungan Sosial Atasan"},
         {"id": "T3_Q19", "text": "Seberapa sering Anda mendapat bantuan atau dukungan dari rekan kerja ketika membutuhkannya?", "code": "1", "sub": "Dukungan Sosial Rekan Kerja"},
+        {"id": "T3_Q", "text": "Saya jawab dengan jujur, pilih jawaban Dalam tingkat yang besar :", "code": "R2", "sub": "Dukungan Sosial Rekan Kerja"},
         {"id": "T3_Q20", "text": "Seberapa sering rekan kerja bersedia mendengarkan masalah pekerjaan Anda ketika Anda membutuhkannya?", "code": "1", "sub": "Dukungan Sosial Rekan Kerja"},
         {"id": "T3_Q21", "text": "Seberapa sering rekan kerja membahas dengan Anda bagaimana pekerjaan Anda dilakukan?", "code": "1", "sub": "Dukungan Sosial Rekan Kerja"},
         {"id": "T3_Q22", "text": "Apakah Anda merasa nyaman dengan suasana kerja bersama rekan-rekan?", "code": "1", "sub": "Rasa Kebersamaan"},
@@ -152,8 +151,7 @@ SURVEY_QUESTIONS = {
         {"id": "T4_Q25", "text": "Apakah pekerjaan menguras energi Anda hingga mengganggu kehidupan pribadi?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
         {"id": "T4_Q26", "text": "Apakah pekerjaan menyita banyak waktu hingga mengganggu kehidupan pribadi Anda?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
         {"id": "T4_Q27", "text": "Apakah tuntutan pekerjaan mengganggu kehidupan pribadi atau keluarga Anda?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
-        {"id": "T4_Q28", "text": "Apakah urusan pekerjaan membuat Anda harus mengubah rencana kegiatan pribadi atau keluarga?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},
-        {"id": "RAN4", "text": "Silakan pilih Sebagian waktu dalam pertanyaan ini :", "code": "R3", "sub": "Tambahan"},         
+        {"id": "T4_Q28", "text": "Apakah urusan pekerjaan membuat Anda harus mengubah rencana kegiatan pribadi atau keluarga?", "code": "2", "sub": "Konflik Pekerjaan - Kehidupan Pribadi"},         
     ],
     "MODAL SOSIAL": [
         {"id": "T5_Q1", "text": "Apakah pegawai saling menahan atau tidak membagikan informasi yang seharusnya diketahui bersama?", "code": "2R", "sub": "Kepercayaan Horizontal"},
@@ -161,6 +159,7 @@ SURVEY_QUESTIONS = {
         {"id": "T5_Q3", "text": "Apakah pegawai di tempat kerja saling percaya?", "code": "2", "sub": "Kepercayaan Horizontal"},
         {"id": "T5_Q4", "text": "Apakah manajemen mempercayai pegawai untuk melakukan pekerjaan dengan baik?", "code": "2", "sub": "Kepercayaan Vertikal"},
         {"id": "T5_Q5", "text": "Apakah pegawai dapat mempercayai informasi yang disampaikan oleh manajemen?", "code": "2", "sub": "Kepercayaan Vertikal"},
+        {"id": "T5_Q", "text": "Silakan pilih Sebagian waktu dalam pertanyaan ini :", "code": "R3", "sub": "Konflik Pekerjaan - Kepercayaan Vertikal"},
         {"id": "T5_Q6", "text": "Apakah manajemen menahan informasi penting yang seharusnya diketahui pegawai?", "code": "2R", "sub": "Kepercayaan Vertikal"},
         {"id": "T5_Q7", "text": "Apakah pegawai dapat menyampaikan pendapat dan perasaan mereka secara terbuka?", "code": "2", "sub": "Kepercayaan Vertikal"},
         {"id": "T5_Q8", "text": "Apakah konflik di tempat kerja diselesaikan secara adil?", "code": "2", "sub": "Keadilan Organisasional"},
@@ -199,6 +198,7 @@ SURVEY_QUESTIONS = {
         {"id": "T7_Q8", "text": "Seberapa sering Anda merasa kelelahan secara fisik?", "code": "9", "sub": "Burnout"},
         {"id": "T7_Q9", "text": "Seberapa sering Anda merasa kelelahan secara emosional?", "code": "9", "sub": "Burnout"},
         {"id": "T7_Q10", "text": "Seberapa sering Anda merasa lelah?", "code": "9", "sub": "Burnout"},
+        {"id": "T7_Q", "text": "Saya fokus dalam mengerjakan survey ini, pilih jawaban Tidak pernah :", "code": "R1", "sub": "Burnout"},
         {"id": "T7_Q11", "text": "Seberapa sering Anda merasa sulit untuk bersantai?", "code": "9", "sub": "Stress", "sub_note": "Pertanyaan berikut menanyakan keadaan Anda selama empat minggu terakhir:"},
         {"id": "T7_Q12", "text": "Seberapa sering Anda merasa mudah tersinggung?", "code": "9", "sub": "Stress"},
         {"id": "T7_Q13", "text": "Seberapa sering Anda merasa tegang?", "code": "9", "sub": "Stress"},

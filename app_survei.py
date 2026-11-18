@@ -833,7 +833,7 @@ if menu == "📝 Form Survei":
                 st.rerun()
 
         with col_next:
-            next_label = "Lanjut ke Segmen 2 (Kesehatan Mental) ➡️" if curr_step == len(categories_list) else "Selanjutnya ➡️"
+            next_label = "Lanjut ke Segmen 2 (Gambaran Aspek Emosional dan Psikologis) ➡️" if curr_step == len(categories_list) else "Selanjutnya ➡️"
             if st.button(next_label, type="primary", use_container_width=True):
                 # Validasi kelengkapan pertanyaan di bagian ini
                 missing = [q["id"] for q in questions if q["id"] not in st.session_state["answers"] or st.session_state["answers"][q["id"]] is None or str(st.session_state["answers"][q["id"]]).strip() == ""]
@@ -851,11 +851,11 @@ if menu == "📝 Form Survei":
     # STEP 9: PENGISIAN SEGMEN 2 (KESEHATAN MENTAL - DASS-21)
     # -------------------------------------------------------------
     elif curr_step == 9:
-        st.progress(90, text="Langkah 10 dari 11: Segmen 2 - Skala Depresi, Kecemasan, & Stress (90% Selesai)")
+        st.progress(90, text="Langkah 10 dari 11: Segmen 2 - Skala Aspek Emosional dan Psikologis (90% Selesai)")
 
         st.markdown("""
         <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); color: white; padding: 22px 26px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 8px 20px -4px rgba(49, 46, 129, 0.3);">
-            <h2 style="color: white; margin: 0 0 8px 0; font-size: 22px;">🌿 Segmen 2: Kondisi Depresi, Kecemasan, dan Stress (DASS-21)</h2>
+            <h2 style="color: white; margin: 0 0 8px 0; font-size: 22px;">🌿 Segmen 2: Gambaran Aspek Emosional dan Psikologis (DASS-21)</h2>
             <p style="color: #c7d2fe; margin: 0; font-size: 14px;">
                 Segmen ini bertujuan untuk memetakan kondisi kesejahteraan emosional dan kesehatan mental dengan instrumen baku DASS-21.
             </p>
