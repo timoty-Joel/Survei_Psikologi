@@ -1236,7 +1236,7 @@ elif menu == "📊 Dashboard Hasil Survei":
         with col_m5:
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #3b82f6;">
-                <div class="metric-title">🌧️ Rata-Rata Skor Depresi (Segmen 2)</div>
+                <div class="metric-title">🌧️ Rata-Rata Skor Tingkat Energi dan Suasana Hati (Segmen 2)</div>
                 <div class="metric-value">{avg_dep} <span style="font-size:16px;color:#64748b;">/42</span></div>
                 <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
@@ -1244,7 +1244,7 @@ elif menu == "📊 Dashboard Hasil Survei":
         with col_m6:
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #f59e0b;">
-                <div class="metric-title">⚡ Rata-Rata Skor Kecemasan (Segmen 2)</div>
+                <div class="metric-title">⚡ Rata-Rata Skor Respons Fisik dan Tingkat Kenyamanan Situasional (Segmen 2)</div>
                 <div class="metric-value">{avg_anx} <span style="font-size:16px;color:#64748b;">/42</span></div>
                 <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
@@ -1252,7 +1252,7 @@ elif menu == "📊 Dashboard Hasil Survei":
         with col_m7:
             st.markdown(f"""
             <div class="metric-card" style="border-left: 4px solid #ef4444;">
-                <div class="metric-title">🔥 Rata-Rata Skor Stress (Segmen 2)</div>
+                <div class="metric-title">🔥 Rata-Rata Skor Pengelolaan Tekanan atau Ketegangan Kerja (Segmen 2)</div>
                 <div class="metric-value">{avg_str} <span style="font-size:16px;color:#64748b;">/42</span></div>
                 <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
             </div>
