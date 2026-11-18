@@ -186,8 +186,7 @@ SURVEY_QUESTIONS = {
         {"id": "T6_Q16", "text": "Jika ya, siapa yang melakukannya? (Perundungan)", "code": "5M", "sub": "Perundungan"},
         {"id": "T6_Q17", "text": "Seberapa sering Anda merasa dikritik secara tidak adil, diintimidasi, atau dipermalukan di depan orang lain oleh rekan kerja atau atasan?", "code": "1", "sub": "Perundungan"}, 
     ],
-    "HEALTH AND WELL-BEING": [
-        {"id": "RAN5", "text": "Saya jawab dengan jujur, pilih jawaban sesuai dengan diri saya sampai tingkat yang cukup besar :", "code": "R4", "sub": "Tambahan"},    
+    "HEALTH AND WELL-BEING": [    
         {"id": "T7_Q1", "text": "Secara umum, bagaimana Anda menilai kondisi kesehatan Anda saat ini?", "code": "7", "sub": "Kesehatan yang Dinilai Diri Sendiri"},
         {"id": "T7_Q2", "text": "Jika kondisi kesehatan terbaik yang dapat Anda bayangkan diberi nilai 10 dan kondisi terburuk diberi nilai 0, berapa nilai yang Anda berikan untuk kondisi kesehatan Anda saat ini?", "code": "8", "sub": "Kesehatan yang Dinilai Diri Sendiri"},
         {"id": "T7_Q3", "text": "Seberapa sering tidur Anda terasa tidak nyenyak atau gelisah?", "code": "9", "sub": "Masalah Tidur", "sub_note": "Pertanyaan berikut menanyakan keadaan Anda selama empat minggu terakhir:"},
@@ -219,6 +218,7 @@ SURVEY_QUESTIONS = {
         {"id": "T8_Q1", "text": "Saya biasanya dapat menyelesaikan masalah sulit jika saya berusaha dengan sungguh-sungguh.", "code": "10", "sub": "Self Efficacy"},
         {"id": "T8_Q2", "text": "Jika orang lain menghambat saya, saya akan mencari cara untuk mencapai tujuan saya.", "code": "10", "sub": "Self Efficacy"},
         {"id": "T8_Q3", "text": "Saya mudah mengikuti rencana yang telah dibuat dan mencapai tujuan saya.", "code": "10", "sub": "Self Efficacy"},
+        {"id": "T8_Q", "text": "Saya jawab dengan jujur, pilih jawaban sesuai dengan diri saya sampai tingkat yang cukup besar :", "code": "R4", "sub": "Self Efficacy"},
         {"id": "T8_Q4", "text": "Saya yakin dapat menghadapi kejadian yang tidak terduga.", "code": "10", "sub": "Self Efficacy"},
         {"id": "T8_Q5", "text": "Saat menghadapi masalah, saya biasanya dapat menemukan beberapa cara untuk menyelesaikannya.", "code": "10", "sub": "Self Efficacy"},
         {"id": "T8_Q6", "text": "Apa pun yang terjadi, saya biasanya mampu mengatasinya.", "code": "10", "sub": "Self Efficacy"},
@@ -680,6 +680,80 @@ def render_horizontal_subdimension_table(items, title, subtitle="Berikut adalah 
     """
     return html
 
+# =====================================================================
+# KONFIGURASI PERTANYAAN JEBAKAN (ATTENTION CHECKS)
+# =====================================================================
+TRAP_QUESTIONS = {
+    "T1_Q": "Sering",
+    "T3_Q": "Dalam tingkat yang besar",
+    "T5_Q": "Sebagian waktu",
+    "T7_Q": "Tidak Pernah",
+    "T8_Q": "Sesuai dengan diri saya sampai tingkat cukup besar atau sering"
+}
+
+def is_trap_answer_correct(qid, answer):
+    """Memeriksa apakah jawaban butir jebakan sesuai dengan instruksi yang ditentukan."""
+    if answer is None:
+        return False
+    ans_str = str(answer).strip().lower()
+    expected = TRAP_QUESTIONS.get(qid, "").strip().lower()
+    if ans_str == expected:
+        return True
+    # Toleransi pencocokan frasa kunci untuk opsi R4
+    if qid == "T8_Q" and "tingkat cukup besar" in ans_str:
+        return True
+    return False
+
+def validate_survey_response(answers):
+    """
+    Memvalidasi jawaban responden terhadap seluruh pertanyaan jebakan (Attention Checks).
+    Aturan: Wajib dijawab betul semua (5/5) agar berstatus 'Valid'.
+    Jika ada salah >= 1, maka berstatus 'Tidak Valid'.
+    Returns: (is_valid: bool, correct_count: int, total_trap: int, failed_traps: list)
+    """
+    if not answers:
+        return False, 0, len(TRAP_QUESTIONS), list(TRAP_QUESTIONS.keys())
+
+    correct_count = 0
+    failed_traps = []
+
+    for qid in TRAP_QUESTIONS:
+        ans = answers.get(qid)
+        if is_trap_answer_correct(qid, ans):
+            correct_count += 1
+        else:
+            failed_traps.append(qid)
+
+    total_trap = len(TRAP_QUESTIONS)
+    is_valid = (correct_count == total_trap)
+    return is_valid, correct_count, total_trap, failed_traps
+
+def compute_validity_for_df(df):
+    """
+    Memastikan kolom Status_Validitas dan Skor_Validitas terhitung dan tersedia di dataframe.
+    Aturan: Wajib dijawab betul semua (5/5) agar berstatus 'Valid'.
+    """
+    if df is None or df.empty:
+        return df
+
+    has_trap_cols = any(qid in df.columns for qid in TRAP_QUESTIONS)
+    status_list = []
+    skor_list = []
+
+    for _, row in df.iterrows():
+        if has_trap_cols:
+            ans_dict = {c: row[c] for c in TRAP_QUESTIONS if c in df.columns and pd.notna(row[c])}
+            is_valid, correct, total, _ = validate_survey_response(ans_dict)
+            status_list.append("Valid" if is_valid else "Tidak Valid")
+            skor_list.append(f"{correct}/{total}")
+        else:
+            status_list.append("Valid")
+            skor_list.append(f"{len(TRAP_QUESTIONS)}/{len(TRAP_QUESTIONS)}")
+
+    df["Status_Validitas"] = status_list
+    df["Skor_Validitas"] = skor_list
+    return df
+
 def calculate_category_scores(answers):
     """
     Menghitung skor rata-rata (0-100) per kategori dan skor rata-rata total
@@ -694,8 +768,8 @@ def calculate_category_scores(answers):
             qid = q["id"]
             code = q["code"]
             ans = answers.get(qid)
-            # 5M adalah pertanyaan kualitatif pelaku (tidak dihitung sebagai skor numerik)
-            if code == "5M":
+            # 5M adalah kualitatif pelaku; R1-R4 / TRAP_QUESTIONS adalah butir jebakan (tidak dihitung ke skor psikososial)
+            if code == "5M" or code.startswith("R") or qid in TRAP_QUESTIONS:
                 continue
             score = calculate_score(code, ans)
             if score is not None:
@@ -729,7 +803,8 @@ def calculate_subdimension_scores(answers):
             for q in qlist:
                 qid = q["id"]
                 code = q["code"]
-                if code == "5M":
+                # 5M adalah kualitatif pelaku; R1-R4 / TRAP_QUESTIONS adalah butir jebakan (tidak dihitung ke skor psikososial)
+                if code == "5M" or code.startswith("R") or qid in TRAP_QUESTIONS:
                     continue
                 ans = answers.get(qid)
                 score = calculate_score(code, ans)

@@ -1145,14 +1145,16 @@ elif menu == "📊 Dashboard Hasil Survei":
     </div>
     """, unsafe_allow_html=True)
 
-    # Info Sumber Data
-    st.markdown(f"**Sumber Data Terkoneksi:** `{source_info}` | Total Baris: **{len(df)} Responden**")
+    # Info Sumber Data & Validitas
+    valid_count = int((df["Status_Validitas"] == "Valid").sum()) if "Status_Validitas" in df.columns else len(df)
+    invalid_count = int((df["Status_Validitas"] == "Tidak Valid").sum()) if "Status_Validitas" in df.columns else 0
+    st.markdown(f"**Sumber Data Terkoneksi:** `{source_info}` | Total: **{len(df)} Responden** (🟢 Valid: **{valid_count}**, 🔴 Tidak Valid: **{invalid_count}**)")
 
     # -------------------------------------------------------------
     # FILTER BAR
     # -------------------------------------------------------------
     with st.container(border=True):
-        col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+        col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns([1.1, 1, 1, 1, 1.2])
         
         with col_f1:
             all_bidang = list(df["Bidang"].unique()) if "Bidang" in df.columns else BIDANG_OPTIONS
@@ -1186,8 +1188,21 @@ elif menu == "📊 Dashboard Hasil Survei":
                 default=all_gender
             )
 
+        with col_f5:
+            validity_filter = st.selectbox(
+                "Filter Validitas Data:",
+                options=["Hanya Data Valid (Default)", "Semua Data", "Hanya Data Tidak Valid"],
+                index=0
+            )
+
     # Terapkan Filter
     df_filtered = df.copy()
+    if "Status_Validitas" in df_filtered.columns:
+        if validity_filter == "Hanya Data Valid (Default)":
+            df_filtered = df_filtered[df_filtered["Status_Validitas"] == "Valid"]
+        elif validity_filter == "Hanya Data Tidak Valid":
+            df_filtered = df_filtered[df_filtered["Status_Validitas"] == "Tidak Valid"]
+
     if selected_bidang_filter:
         df_filtered = df_filtered[df_filtered["Bidang"].isin(selected_bidang_filter)]
     if selected_usia_filter:
@@ -1668,7 +1683,7 @@ elif menu == "📊 Dashboard Hasil Survei":
             
             # Kolom ringkasan yang nyaman dibaca mencakup Segmen 1, Sub-Dimensi, dan Segmen 2
             summary_cols = (
-                ["ID_Responden", "Waktu_Pengisian", "Bidang", "Nama_Inisial", "Jenis_Kelamin", "Rentang_Usia", "Masa_Kerja", "Jabatan"]
+                ["ID_Responden", "Status_Validitas", "Skor_Validitas", "Waktu_Pengisian", "Bidang", "Nama_Inisial", "Jenis_Kelamin", "Rentang_Usia", "Masa_Kerja", "Jabatan"]
                 + list(DIMENSION_COLUMNS.values())
                 + ["Skor_Rata_Rata_Total"]
                 + list(SUBDIMENSION_COLUMNS.values())

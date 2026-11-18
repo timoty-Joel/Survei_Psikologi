@@ -25,7 +25,10 @@ from scoring_map import (
     calculate_score_segmen2,
     calculate_segmen2_scores,
     get_dass_severity,
-    compute_segmen2_for_df
+    compute_segmen2_for_df,
+    TRAP_QUESTIONS,
+    validate_survey_response,
+    compute_validity_for_df
 )
 
 LOCAL_DATA_FILE = "data_survei.csv"
@@ -77,12 +80,24 @@ def generate_sample_data(num_samples=24):
         
         # Buat jawaban dummy untuk setiap pertanyaan Segmen 1
         dummy_answers = {}
+        # Tentukan apakah responden sampel ini menjawab jebakan secara valid atau tidak
+        # 4 dari 24 responden (i % 6 == 0) dibuat 'Tidak Valid' untuk demo pengujian
+        is_sample_valid = (i % 6 != 0)
+
         for cat, qs in SURVEY_QUESTIONS.items():
             for q in qs:
                 qid = q["id"]
                 code = q["code"]
                 opts = get_question_options(code)
-                if code == "5M":
+
+                if qid in TRAP_QUESTIONS:
+                    if is_sample_valid:
+                        dummy_answers[qid] = TRAP_QUESTIONS[qid]
+                    else:
+                        # Pilih opsi yang salah secara acak
+                        wrong_opts = [o for o in opts if o != TRAP_QUESTIONS[qid]]
+                        dummy_answers[qid] = random.choice(wrong_opts) if wrong_opts else opts[0]
+                elif code == "5M":
                     dummy_answers[qid] = random.choice(opts)
                 elif code == "8":
                     dummy_answers[qid] = str(random.randint(6, 10))
@@ -94,6 +109,7 @@ def generate_sample_data(num_samples=24):
 
         cat_scores, overall_score = calculate_category_scores(dummy_answers)
         sub_scores = calculate_subdimension_scores(dummy_answers)
+        is_valid, correct_trap, total_trap, _ = validate_survey_response(dummy_answers)
 
         # Buat jawaban dummy untuk Segmen 2
         dummy_seg2_answers = {}
@@ -116,7 +132,9 @@ def generate_sample_data(num_samples=24):
             "Nama_Penyakit": "Tidak Ada",
             "Berat_Badan": random.randint(50, 90),
             "Tinggi_Badan": random.randint(150, 180),
-            "Status_Pernikahan": random.choice(["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"])
+            "Status_Pernikahan": random.choice(["Sudah menikah", "Belum menikah", "Cerai mati", "Cerai hidup"]),
+            "Status_Validitas": "Valid" if is_valid else "Tidak Valid",
+            "Skor_Validitas": f"{correct_trap}/{total_trap}"
         }
 
         # Tambahkan skor per dimensi Segmen 1
@@ -189,6 +207,9 @@ def load_data():
                 if "Total_Skor_Segmen2" in df_gsheet.columns:
                     df_gsheet["Total_Skor_Segmen2"] = pd.to_numeric(df_gsheet["Total_Skor_Segmen2"], errors="coerce").fillna(0)
 
+                # Lengkapi status dan skor validitas pertanyaan jebakan
+                df_gsheet = compute_validity_for_df(df_gsheet)
+
                 return df_gsheet, "Google Sheets"
         except Exception as e:
             st.sidebar.warning(f"Gagal membaca Google Sheets ({e}), beralih ke penyimpanan lokal.")
@@ -223,6 +244,9 @@ def load_data():
                 if "Total_Skor_Segmen2" in df_local.columns:
                     df_local["Total_Skor_Segmen2"] = pd.to_numeric(df_local["Total_Skor_Segmen2"], errors="coerce").fillna(0)
 
+                # Lengkapi status dan skor validitas pertanyaan jebakan
+                df_local = compute_validity_for_df(df_local)
+
                 return df_local, "File Lokal (data_survei.csv)"
         except Exception:
             pass
@@ -251,6 +275,9 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
     # Hitung skor Segmen 2
     seg2_scores, seg2_total, seg2_severity = calculate_segmen2_scores(answers_segmen2)
 
+    # Validasi butir jebakan (Attention Checks)
+    is_valid, correct_trap, total_trap, failed_traps = validate_survey_response(answers)
+
     # Susun dict rekaman data lengkap
     record = {
         "ID_Responden": id_resp,
@@ -265,7 +292,9 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
         "Nama_Penyakit": biodata.get("nama_penyakit", "-"),
         "Berat_Badan": biodata.get("berat_badan", 0),
         "Tinggi_Badan": biodata.get("tinggi_badan", 0),
-        "Status_Perkawinan": biodata.get("status_perkawinan", "-")
+        "Status_Perkawinan": biodata.get("status_perkawinan", "-"),
+        "Status_Validitas": "Valid" if is_valid else "Tidak Valid",
+        "Skor_Validitas": f"{correct_trap}/{total_trap}"
     }
 
     # Skor dimensi Segmen 1
@@ -337,6 +366,9 @@ def save_survey_response(biodata, answers, answers_segmen2=None):
         "success": local_saved or gsheet_saved,
         "local_saved": local_saved,
         "gsheet_saved": gsheet_saved,
+        "is_valid": is_valid,
+        "skor_validitas": f"{correct_trap}/{total_trap}",
+        "failed_traps": failed_traps,
         "cat_scores": cat_scores,
         "sub_scores": sub_scores,
         "overall_score": overall_avg,
