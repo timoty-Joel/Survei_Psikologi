@@ -490,11 +490,11 @@ if menu == "📝 Form Survei":
 
             Sebelum melanjutkan, mohon perhatikan ketentuan etika dan kerahasiaan berikut:
             
-            1. **Sifat Partisipasi Sukarela**: Partisipasi Anda dalam survei ini sepenuhnya bersifat **sukarela (voluntary)**. Anda berhak untuk menolak berpartisipasi atau menghentikan pengisian kapan saja tanpa dampak negatif maupun sanksi apa pun.
+            1. **Sifat Partisipasi Sukarela**: Partisipasi Anda dalam survei ini sepenuhnya bersifat **sukarela**. Anda berhak untuk menolak berpartisipasi atau menghentikan pengisian kapan saja tanpa dampak negatif maupun sanksi apa pun.
             2. **Jaminan Kerahasiaan & Anonimitas**: Seluruh data dan jawaban yang Anda berikan bersifat **rahasia**. Identitas nama dapat diisi secara anonim / menggunakan inisial. Laporan dan analisis survei disajikan secara **agregat (kelompok)**, bukan untuk evaluasi kinerja personal individu.
             3. **Tujuan Penggunaan Data**: Data yang terkumpul hanya akan digunakan untuk kepentingan evaluasi organisasi, pengembangan program Keselamatan dan Kesehatan Kerja (K3), serta perbaikan iklim lingkungan kerja.
-            4. **Waktu Pengisian**: Kuesioner ini dirancang ringkas dengan estimasi waktu pengisian sekitar **5 – 7 menit**.
-            5. **Objektivitas Respon**: Tidak ada penilaian benar atau salah. Kami sangat mengharapkan jawaban yang paling menggambarkan kondisi dan pengalaman kerja nyata Anda selama 12 bulan terakhir.
+            4. **Waktu Pengisian**: Kuesioner ini dirancang ringkas dengan estimasi waktu pengisian sekitar **15 – 20 menit**.
+            5. **Objektivitas Respon**: Tidak ada penilaian benar atau salah. Kami sangat mengharapkan jawaban yang paling menggambarkan kondisi dan pengalaman kerja nyata Anda.
             """)
 
             st.divider()
