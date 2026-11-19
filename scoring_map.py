@@ -591,21 +591,25 @@ def get_subdimension_badge_style(level, polarity):
     """
     Mengembalikan style warna untuk pill badge kategori (Rendah, Sedang, Tinggi)
     dan batang progress bar sesuai referensi visual UI horizontal bar.
+    Favorable: Hijau dengan lowered opacity dan border bold abu-abu gelap
+    Unfavorable: Merah dengan lowered opacity dan border bold abu-abu gelap
     """
     if polarity == "Favorable":
+        bar_color = "rgba(34, 197, 94, 0.45)"
         if level == "Tinggi":
-            return {"bg": "#ecfdf5", "text": "#059669", "border": "#a7f3d0", "bar": "#10b981"}
+            return {"bg": "#ecfdf5", "text": "#059669", "border": "#a7f3d0", "bar": bar_color, "bar_border": "#334155"}
         elif level == "Sedang":
-            return {"bg": "#fffbeb", "text": "#d97706", "border": "#fde68a", "bar": "#f59e0b"}
+            return {"bg": "#fffbeb", "text": "#d97706", "border": "#fde68a", "bar": bar_color, "bar_border": "#334155"}
         else: # Rendah
-            return {"bg": "#fef2f2", "text": "#dc2626", "border": "#fecaca", "bar": "#ef4444"}
+            return {"bg": "#fef2f2", "text": "#dc2626", "border": "#fecaca", "bar": bar_color, "bar_border": "#334155"}
     else: # Unfavorable
+        bar_color = "rgba(239, 68, 68, 0.45)"
         if level == "Rendah":
-            return {"bg": "#ecfdf5", "text": "#059669", "border": "#a7f3d0", "bar": "#10b981"}
+            return {"bg": "#ecfdf5", "text": "#059669", "border": "#a7f3d0", "bar": bar_color, "bar_border": "#334155"}
         elif level == "Sedang":
-            return {"bg": "#fffbeb", "text": "#d97706", "border": "#fde68a", "bar": "#f59e0b"}
+            return {"bg": "#fffbeb", "text": "#d97706", "border": "#fde68a", "bar": bar_color, "bar_border": "#334155"}
         else: # Tinggi
-            return {"bg": "#fef2f2", "text": "#dc2626", "border": "#fecaca", "bar": "#ef4444"}
+            return {"bg": "#fef2f2", "text": "#dc2626", "border": "#fecaca", "bar": bar_color, "bar_border": "#334155"}
 
 def render_horizontal_subdimension_table(items, title, subtitle="Berikut adalah hasil penilaian pada setiap subdimensi dalam kategori ini."):
     """
@@ -637,7 +641,7 @@ def render_horizontal_subdimension_table(items, title, subtitle="Berikut adalah 
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <div style="min-width: 42px; font-weight: 700; color: #0f172a; font-size: 15px; text-align: right; font-variant-numeric: tabular-nums;">{score:.1f}</div>
                     <div style="flex: 1; background: #f1f5f9; border-radius: 8px; height: 16px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06); min-width: 140px;">
-                        <div style="width: {score_clamped}%; background: {style['bar']}; height: 100%; border-radius: 8px; transition: width 0.4s ease;"></div>
+                        <div style="width: {score_clamped}%; background: {style['bar']}; border: 1.5px solid {style.get('bar_border', '#334155')}; height: 100%; border-radius: 8px; box-sizing: border-box; transition: width 0.4s ease;"></div>
                     </div>
                 </div>
             </td>
