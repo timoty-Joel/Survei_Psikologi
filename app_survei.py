@@ -110,6 +110,74 @@ st.markdown("""
         margin-top: 4px;
     }
 
+    /* Hook Cards & Executive Summary */
+    div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        border-radius: 14px !important;
+        background: #ffffff !important;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04) !important;
+        transition: all 0.25s ease !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover > div {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 10px 22px rgba(59, 130, 246, 0.1) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .hook-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 3px 10px rgba(15, 23, 42, 0.04);
+        margin-bottom: 8px;
+        min-height: 215px;
+        transition: all 0.25s ease;
+    }
+    .hook-container:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 10px 22px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    .hook-tag {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+    .hook-tag-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .hook-tag-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .hook-tag-red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .hook-tag-yellow { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .hook-tag-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+    .hook-val {
+        font-size: 25px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.15;
+        margin-bottom: 4px;
+    }
+    .hook-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+    .hook-text {
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.45;
+        margin-bottom: 4px;
+    }
+
     /* Question Card - Default / Belum Dijawab */
     .question-card {
         background: #ffffff;
@@ -470,9 +538,642 @@ def build_subdimension_hbar_chart(items, title_text, xaxis_title="Skor Rata-Rata
     return fig
 
 # =====================================================================
-# 4. HALAMAN 1: FORM SURVEI
+# MODAL POP-UP DIALOGS UNTUK HALAMAN HOOK (@st.dialog)
 # =====================================================================
 categories_list = list(SURVEY_QUESTIONS.keys())
+
+@st.dialog("📊 Analitik Detail: Dimensi Utama Tertinggi", width="large")
+def dialog_top_dimension(dim_key, dim_score, df_scope):
+    dim_meta = CATEGORY_METADATA.get(dim_key, {"label": dim_key, "icon": "📁", "desc": "", "short": dim_key})
+    st.markdown(f"### {dim_meta.get('icon', '📁')} {dim_meta.get('label', dim_key)}")
+    st.caption(dim_meta.get("desc", ""))
+    
+    col_d1, col_d2, col_d3 = st.columns(3)
+    with col_d1:
+        st.metric("Skor Rata-Rata", f"{dim_score:.1f} / 100")
+    with col_d2:
+        level = get_score_level(dim_score)
+        st.metric("Kategori Level", level)
+    with col_d3:
+        st.metric("Basis Responden", f"{len(df_scope)} Orang")
+    
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("#### 🏢 Skor Rata-Rata Dimensi Ini Antar Bidang Kerja")
+    col_name = DIMENSION_COLUMNS.get(dim_key)
+    if col_name and col_name in df_scope.columns and "Bidang" in df_scope.columns:
+        bidang_dim = df_scope.groupby("Bidang")[col_name].mean().reset_index()
+        bidang_dim.columns = ["Bidang", "Skor"]
+        bidang_dim["Skor"] = bidang_dim["Skor"].round(1)
+        fig_b = px.bar(
+            bidang_dim,
+            x="Bidang",
+            y="Skor",
+            color="Bidang",
+            color_discrete_map=BIDANG_COLOR_MAP,
+            text="Skor"
+        )
+        fig_b.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+        fig_b.update_layout(yaxis=dict(range=[0, 115], title="Skor (0 - 100)", gridcolor="#f1f5f9"), height=300, showlegend=False, margin=dict(l=10, r=10, t=30, b=20))
+        st.plotly_chart(fig_b, use_container_width=True)
+
+    st.markdown("#### 🔬 Rincian Seluruh Sub-Dimensi di Dalam Dimensi Ini")
+    subs = SUBDIMENSIONS_BY_CATEGORY.get(dim_key, [])
+    if subs:
+        sub_items, sub_tbl = collect_subdimension_items_from_df(df_scope, [dim_key])
+        fig_subs = build_subdimension_hbar_chart(
+            sub_items,
+            title_text=f"Sub-Dimensi: {dim_meta.get('label', dim_key)}"
+        )
+        st.plotly_chart(fig_subs, use_container_width=True)
+        st.dataframe(pd.DataFrame(sub_tbl), use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    💡 **Rekomendasi Evaluasi K3**:
+    - Dimensi ini memiliki rata-rata tertinggi di organisasi; perhatikan sub-dimensi mana yang paling dominan menggerakkan tingginya skor ini.
+    - Lakukan penyesuaian berkala pada bidang dengan skor ekstrem agar distribusi beban dan dukungan tetap seimbang.
+    """)
+
+@st.dialog("🟢 Analitik Kekuatan Utama: Sub-Dimensi Favorable Tertinggi", width="large")
+def dialog_top_favorable(sub_name, sub_score, df_scope):
+    lbl = SUBDIMENSION_LABELS.get(sub_name, {"en": sub_name, "id": sub_name})
+    st.markdown(f"### 🟢 {lbl['en']} ({lbl['id']})")
+    st.caption("Sub-dimensi dengan sifat **Favorable (Aspek Positif / Pelindung)** tertinggi di lingkungan kerja.")
+    
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        st.metric("Skor Rata-Rata Sub-Dimensi", f"{sub_score:.1f} / 100")
+    with col_f2:
+        st.metric("Status Evaluasi", "🟢 Kekuatan Utama (Risiko Rendah)")
+        
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("#### 🏢 Skor Sub-Dimensi Ini per Bidang Kerja")
+    col_s = SUBDIMENSION_COLUMNS.get(sub_name)
+    if col_s and col_s in df_scope.columns and "Bidang" in df_scope.columns:
+        b_df = df_scope.groupby("Bidang")[col_s].mean().reset_index()
+        b_df.columns = ["Bidang", "Skor"]
+        b_df["Skor"] = b_df["Skor"].round(1)
+        fig_b = px.bar(
+            b_df, x="Bidang", y="Skor", color="Bidang", color_discrete_map=BIDANG_COLOR_MAP, text="Skor"
+        )
+        fig_b.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+        fig_b.update_layout(yaxis=dict(range=[0, 115], title="Skor (0 - 100)", gridcolor="#f1f5f9"), height=290, showlegend=False, margin=dict(l=10, r=10, t=30, b=20))
+        st.plotly_chart(fig_b, use_container_width=True)
+    
+    # 5 Sub-dimensi Favorable tertinggi di organisasi
+    st.markdown("#### 🏆 Top 5 Aspek Favorable (Kekuatan) Organisasi Lainnya")
+    all_fav = {}
+    for s, c in SUBDIMENSION_COLUMNS.items():
+        if SUBDIMENSION_POLARITY.get(s) == "Favorable" and c in df_scope.columns:
+            all_fav[s] = df_scope[c].mean()
+    top5_fav = sorted(all_fav.items(), key=lambda x: x[1], reverse=True)[:5]
+    top5_rows = []
+    for rank, (s, sc) in enumerate(top5_fav, 1):
+        slbl = SUBDIMENSION_LABELS.get(s, {"en": s, "id": s})
+        top5_rows.append({"Peringkat": f"#{rank}", "Sub-Dimensi": f"{slbl['en']} ({slbl['id']})", "Skor": round(sc, 1), "Kategori": get_score_level(sc)})
+    st.dataframe(pd.DataFrame(top5_rows), use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    💡 **Rekomendasi Manajemen**:
+    - Aspek ini menjadi modal sosial dan psikologis terbesar karyawan yang menjaga resiliensi kerja.
+    - Pertahankan praktik positif, sistem apresiasi, dan komunikasi yang sudah berjalan baik pada aspek ini.
+    """)
+
+@st.dialog("🔴 Analitik Titik Kritis: Beban Kerja / Stressor Tertinggi", width="large")
+def dialog_top_unfavorable(sub_name, sub_score, df_scope):
+    lbl = SUBDIMENSION_LABELS.get(sub_name, {"en": sub_name, "id": sub_name})
+    st.markdown(f"### 🔴 {lbl['en']} ({lbl['id']})")
+    st.caption("Sub-dimensi dengan sifat **Unfavorable (Beban Kerja / Pemicu Stres)** dengan skor tertinggi yang perlu dimitigasi.")
+    
+    col_u1, col_u2 = st.columns(2)
+    with col_u1:
+        st.metric("Skor Rata-Rata Beban", f"{sub_score:.1f} / 100")
+    with col_u2:
+        st.metric("Tingkat Prioritas", "🔴 Prioritas Intervensi K3")
+        
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("#### 🏢 Bidang Kerja Paling Terbebani oleh Aspek Ini")
+    col_s = SUBDIMENSION_COLUMNS.get(sub_name)
+    if col_s and col_s in df_scope.columns and "Bidang" in df_scope.columns:
+        b_df = df_scope.groupby("Bidang")[col_s].mean().reset_index().sort_values(by="Skor", ascending=False)
+        b_df.columns = ["Bidang", "Skor"]
+        b_df["Skor"] = b_df["Skor"].round(1)
+        fig_b = px.bar(
+            b_df, x="Bidang", y="Skor", color="Bidang", color_discrete_map=BIDANG_COLOR_MAP, text="Skor"
+        )
+        fig_b.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+        fig_b.update_layout(yaxis=dict(range=[0, 115], title="Skor Beban (0 - 100)", gridcolor="#f1f5f9"), height=290, showlegend=False, margin=dict(l=10, r=10, t=30, b=20))
+        st.plotly_chart(fig_b, use_container_width=True)
+
+    # 5 Sub-dimensi Unfavorable tertinggi
+    st.markdown("#### ⚠️ Top 5 Aspek Beban Kerja (Stressor) Organisasi")
+    all_unfav = {}
+    for s, c in SUBDIMENSION_COLUMNS.items():
+        if SUBDIMENSION_POLARITY.get(s) == "Unfavorable" and c in df_scope.columns:
+            all_unfav[s] = df_scope[c].mean()
+    top5_unfav = sorted(all_unfav.items(), key=lambda x: x[1], reverse=True)[:5]
+    top5_unfav_rows = []
+    for rank, (s, sc) in enumerate(top5_unfav, 1):
+        slbl = SUBDIMENSION_LABELS.get(s, {"en": s, "id": s})
+        top5_unfav_rows.append({"Peringkat": f"#{rank}", "Sub-Dimensi Beban": f"{slbl['en']} ({slbl['id']})", "Skor Beban": round(sc, 1), "Kategori": get_score_level(sc)})
+    st.dataframe(pd.DataFrame(top5_unfav_rows), use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    ⚠️ **Rekomendasi Ergonomi & Pencegahan Stres K3**:
+    - Tinjau ulang beban tugas dan ritme kerja pada unit/bidang dengan skor tertinggi.
+    - Sediakan saluran konseling rahasia dan forum dialog berkala antara staf dan pengawas untuk mengurai hambatan kerja.
+    """)
+
+@st.dialog("🟡 Analitik Defisit Dukungan: Aspek Favorable Terendah", width="large")
+def dialog_lowest_favorable(sub_name, sub_score, df_scope):
+    lbl = SUBDIMENSION_LABELS.get(sub_name, {"en": sub_name, "id": sub_name})
+    st.markdown(f"### 🟡 {lbl['en']} ({lbl['id']})")
+    st.caption("Sub-dimensi aspek positif (**Favorable**) dengan skor terendah yang paling mendesak ditingkatkan.")
+
+    col_l1, col_l2 = st.columns(2)
+    with col_l1:
+        st.metric("Skor Rata-Rata Saat Ini", f"{sub_score:.1f} / 100")
+    with col_l2:
+        st.metric("Status Evaluasi", "🟡 Defisit Sumber Daya Kerja")
+
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("#### 🏢 Skor per Bidang Kerja")
+    col_s = SUBDIMENSION_COLUMNS.get(sub_name)
+    if col_s and col_s in df_scope.columns and "Bidang" in df_scope.columns:
+        b_df = df_scope.groupby("Bidang")[col_s].mean().reset_index()
+        b_df.columns = ["Bidang", "Skor"]
+        b_df["Skor"] = b_df["Skor"].round(1)
+        fig_b = px.bar(
+            b_df, x="Bidang", y="Skor", color="Bidang", color_discrete_map=BIDANG_COLOR_MAP, text="Skor"
+        )
+        fig_b.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+        fig_b.update_layout(yaxis=dict(range=[0, 115], title="Skor (0 - 100)", gridcolor="#f1f5f9"), height=290, showlegend=False, margin=dict(l=10, r=10, t=30, b=20))
+        st.plotly_chart(fig_b, use_container_width=True)
+
+    st.markdown("""
+    🛠️ **Rekomendasi Tindak Lanjut**:
+    - Skor rendah pada aspek favorable menandakan karyawan merasa kurang memperoleh dukungan, kejelasan peran, atau pengakuan.
+    - Programkan pelatihan kepemimpinan empati untuk supervisor dan tinjau kembali kejelasan deskripsi pekerjaan.
+    """)
+
+@st.dialog("🚻 Analitik Gender & Ketegangan Kerja (Segmen 2)", width="large")
+def dialog_gender_stress(df_scope):
+    st.markdown("### 🚻 Perbandingan Gejala Kesehatan Mental Berdasarkan Jenis Kelamin")
+    st.caption("Analisis komparatif gejala Depresi, Kecemasan, dan Ketegangan/Stres (DASS-21) antara karyawan Laki-laki dan Perempuan.")
+
+    if "Jenis_Kelamin" in df_scope.columns:
+        gender_data = []
+        for g in ["Laki-laki", "Perempuan"]:
+            gdf = df_scope[df_scope["Jenis_Kelamin"] == g]
+            if not gdf.empty:
+                for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
+                    s_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
+                    val = round(gdf[col_name].mean(), 1) if col_name in gdf.columns else 0.0
+                    gender_data.append({"Jenis Kelamin": g, "Dimensi": s_dim, "Skor Rata-Rata": val})
+
+        if gender_data:
+            df_g = pd.DataFrame(gender_data)
+            fig_g = px.bar(
+                df_g,
+                x="Dimensi",
+                y="Skor Rata-Rata",
+                color="Jenis Kelamin",
+                barmode="group",
+                color_discrete_map={"Laki-laki": "#3b82f6", "Perempuan": "#ec4899"},
+                text="Skor Rata-Rata"
+            )
+            fig_g.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+            fig_g.update_layout(yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)", gridcolor="#f1f5f9"), height=330, margin=dict(l=10, r=10, t=30, b=20))
+            st.plotly_chart(fig_g, use_container_width=True)
+
+        # Distribusi keparahan tingkat ketegangan / stres
+        if "Tingkat_Stress" in df_scope.columns:
+            st.markdown("#### 📊 Distribusi Tingkat Keparahan Ketegangan (Stres) per Gender")
+            col_cg1, col_cg2 = st.columns(2)
+            cat_order = ["Normal", "Ringan", "Sedang", "Berat", "Sangat Berat"]
+            for idx, g in enumerate(["Laki-laki", "Perempuan"]):
+                target_col = col_cg1 if idx == 0 else col_cg2
+                with target_col:
+                    gdf = df_scope[df_scope["Jenis_Kelamin"] == g]
+                    if not gdf.empty:
+                        s_counts = pd.Categorical(gdf["Tingkat_Stress"], categories=cat_order, ordered=True).value_counts().reset_index()
+                        s_counts.columns = ["Tingkat", "Jumlah"]
+                        s_counts = s_counts[s_counts["Jumlah"] > 0]
+                        total_g = int(s_counts["Jumlah"].sum())
+                        fig_g_pie = px.pie(
+                            s_counts,
+                            names="Tingkat",
+                            values="Jumlah",
+                            hole=0.4,
+                            title=f"Ketegangan: {g} ({total_g} pengisi)",
+                            color="Tingkat",
+                            color_discrete_map={"Normal": "#10b981", "Ringan": "#3b82f6", "Sedang": "#f59e0b", "Berat": "#ea580c", "Sangat Berat": "#dc2626"},
+                            category_orders={"Tingkat": cat_order}
+                        )
+                        fig_g_pie.update_traces(textposition="inside", texttemplate="<b>%{label}</b><br>%{value} orang (%{percent})")
+                        fig_g_pie.update_layout(height=280, showlegend=False, margin=dict(l=10, r=10, t=35, b=10))
+                        st.plotly_chart(fig_g_pie, use_container_width=True)
+
+    st.markdown("""
+    💡 **Wawasan Ergonomi & K3 Berbasis Gender**:
+    - Perbedaan skor ketegangan kerja dapat dipengaruhi oleh perbedaan beban ganda (*work-life balance*), karakter pekerjaan fisik/administratif, atau gaya koping stres.
+    - Sediakan program kebugaran mental dan pendampingan psikologi kerja yang inklusif untuk seluruh staf.
+    """)
+
+@st.dialog("🎂 Analitik Demografi Rentang Usia & Beban Mental", width="large")
+def dialog_age_demographics(df_scope):
+    st.markdown("### 🎂 Pola Kesehatan Mental Berdasarkan Kelompok Usia")
+    st.caption("Pemantauan skor akumulatif DASS-21 dan kecenderungan gejala psikologis di setiap rentang usia kerja.")
+
+    if "Rentang_Usia" in df_scope.columns:
+        age_data = []
+        age_order = ["< 25 tahun", "25 - 34 tahun", "35 - 44 tahun", "45 - 54 tahun", "≥ 55 tahun"]
+        for age in age_order:
+            adf = df_scope[df_scope["Rentang_Usia"] == age]
+            if not adf.empty:
+                val_dep = round(adf["Skor_Segmen2_Depresi"].mean(), 1) if "Skor_Segmen2_Depresi" in adf.columns else 0.0
+                val_anx = round(adf["Skor_Segmen2_Kecemasan"].mean(), 1) if "Skor_Segmen2_Kecemasan" in adf.columns else 0.0
+                val_str = round(adf["Skor_Segmen2_Stress"].mean(), 1) if "Skor_Segmen2_Stress" in adf.columns else 0.0
+                val_tot = round(adf["Total_Skor_Segmen2"].mean(), 1) if "Total_Skor_Segmen2" in adf.columns else 0.0
+                age_data.append({
+                    "Rentang Usia": age,
+                    "Total DASS": val_tot,
+                    "Depresi": val_dep,
+                    "Kecemasan": val_anx,
+                    "Stress": val_str,
+                    "Jumlah Pengisi": len(adf)
+                })
+
+        if age_data:
+            df_age = pd.DataFrame(age_data)
+            fig_age = px.bar(
+                df_age,
+                x="Rentang Usia",
+                y="Total DASS",
+                color="Rentang Usia",
+                text="Total DASS",
+                title="Total Akumulasi Skor DASS-21 per Kelompok Usia (0 - 126)"
+            )
+            fig_age.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}</b>")
+            fig_age.update_layout(yaxis=dict(title="Skor Total DASS-21", gridcolor="#f1f5f9"), height=330, showlegend=False, margin=dict(l=10, r=10, t=35, b=20))
+            st.plotly_chart(fig_age, use_container_width=True)
+
+            st.markdown("#### 📋 Tabel Rincian Rata-Rata per Kelompok Usia")
+            st.dataframe(df_age, use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    💡 **Wawasan Adaptasi Usia Kerja**:
+    - **Pekerja Muda (<25 & 25-34 th)**: Kerap menghadapi kecemasan adaptasi karir, kejelasan peran, dan tuntutan kecepatan kerja yang tinggi.
+    - **Pekerja Senior (≥45 th)**: Memerlukan perhatian lebih pada kenyamanan fisik ergonomi dan pemeliharaan kesehatan jangka panjang.
+    """)
+
+@st.dialog("⚡ Analitik Prevalensi Gejala DASS-21 Organisasi", width="large")
+def dialog_dass_prevalence(df_scope):
+    st.markdown("### ⚡ Prevalensi Gejala Kesehatan Mental Kerja Organisasi")
+    st.caption("Proporsi keseluruhan karyawan yang terindikasi Normal vs Bergejala (Ringan, Sedang, Berat, Sangat Berat).")
+
+    dims = ["Depresi", "Kecemasan", "Stress"]
+    prev_summary = []
+    for d in dims:
+        col_t = f"Tingkat_{d}"
+        if col_t in df_scope.columns and not df_scope.empty:
+            total_n = len(df_scope)
+            normal_n = (df_scope[col_t] == "Normal").sum()
+            gejala_n = total_n - normal_n
+            pct_gejala = round((gejala_n / total_n) * 100, 1) if total_n > 0 else 0.0
+            berat_n = (df_scope[col_t].isin(["Berat", "Sangat Berat"])).sum()
+            pct_berat = round((berat_n / total_n) * 100, 1) if total_n > 0 else 0.0
+            prev_summary.append({
+                "Dimensi": d,
+                "Prevalensi Bergejala (%)": pct_gejala,
+                "Jumlah Bergejala": f"{gejala_n} / {total_n}",
+                "Proporsi Berat/Sangat Berat (%)": pct_berat
+            })
+
+    if prev_summary:
+        df_prev = pd.DataFrame(prev_summary)
+        fig_prev = px.bar(
+            df_prev,
+            x="Dimensi",
+            y="Prevalensi Bergejala (%)",
+            color="Dimensi",
+            text="Prevalensi Bergejala (%)",
+            color_discrete_map={"Depresi": "#3b82f6", "Kecemasan": "#f59e0b", "Stress": "#ef4444"},
+            title="Prevalensi Karyawan Terindikasi Gejala (Ringan s/d Sangat Berat)"
+        )
+        fig_prev.update_traces(textposition="outside", texttemplate="<b>%{y:.1f}%</b>")
+        fig_prev.update_layout(yaxis=dict(range=[0, 105], title="Persentase (%)", gridcolor="#f1f5f9"), height=320, showlegend=False, margin=dict(l=10, r=10, t=35, b=20))
+        st.plotly_chart(fig_prev, use_container_width=True)
+
+        st.dataframe(df_prev, use_container_width=True, hide_index=True)
+
+    st.markdown("""
+    💡 **Rekomendasi Intervensi K3 Organisasi**:
+    - Prevalensi gejala merupakan indikator dini untuk mencegah absensi sakit (*sickness absence*) dan kejenuhan kerja.
+    - Jadwalkan sesi relaksasi ergonomi dan evaluasi beban kerja berkala untuk menjaga stabilitas kesehatan mental tim.
+    """)
+
+# =====================================================================
+# FUNGSI RENDER HALAMAN HOOK (RINGKASAN EKSEKUTIF)
+# =====================================================================
+def render_hook_dashboard(df_filtered, df):
+    """
+    Menampilkan Halaman Hook (Ringkasan Eksekutif) dalam bentuk kartu-kartu metrik kunci.
+    Ketika tombol pada kartu diklik, akan memunculkan pop-up dialog analitik mendalam (@st.dialog).
+    """
+
+    # --- CALL TO ACTION UNTUK MEMBUKA HALAMAN DETAIL ---
+    with st.container(border=True):
+        col_cta1, col_cta2 = st.columns([3, 1])
+        with col_cta1:
+            st.markdown("#### 📊 Ingin Menganalisis Seluruh Grafik & Data Mendalam?")
+            st.write("Buka **Halaman Detail** untuk melihat diagram batang profil 8 dimensi, distribusi per bidang, barchart horizontal sub-bidang, perbandingan filter Segmen 2, serta tabel data responden.")
+        with col_cta2:
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            if st.button("Buka Halaman Detail ➡️", type="primary", use_container_width=True, key="btn_switch_to_detail"):
+                st.session_state["dash_view_mode"] = "detail"
+                st.rerun()
+
+    # Dimensi Faktor Psikososial Tertinggi
+    dim_avgs = {dim: df_filtered[col].mean() for dim, col in DIMENSION_COLUMNS.items() if col in df_filtered.columns}
+    top_dim = max(dim_avgs, key=dim_avgs.get) if dim_avgs else categories_list[0]
+    top_dim_score = round(dim_avgs.get(top_dim, 0.0), 1)
+    top_dim_meta = CATEGORY_METADATA.get(top_dim, {"label": top_dim, "icon": "📁", "short": top_dim})
+    top_dim_level = get_score_level(top_dim_score)
+
+    # Dimensi Faktor Psikososial Terendah
+    low_dim = min(dim_avgs, key=dim_avgs.get) if dim_avgs else categories_list[0]
+    low_dim_score = round(dim_avgs.get(low_dim, 0.0), 1)
+    low_dim_meta = CATEGORY_METADATA.get(low_dim, {"label": low_dim, "icon": "📁", "short": low_dim})
+    low_dim_level = get_score_level(low_dim_score)
+
+    # Temukan subdimensi tertinggi di dalam dimensi tertinggi ini
+    subs_top_dim = SUBDIMENSIONS_BY_CATEGORY.get(top_dim, [])
+    top_sub_in_dim = None
+    top_sub_in_dim_score = -1.0
+    for s in subs_top_dim:
+        col_s = SUBDIMENSION_COLUMNS.get(s)
+        if col_s and col_s in df_filtered.columns:
+            sc = df_filtered[col_s].mean()
+            if sc > top_sub_in_dim_score:
+                top_sub_in_dim_score = sc
+                top_sub_in_dim = s
+
+    # Sub-Dimensi Favorable Tertinggi & Terendah
+    sub_avgs = {sub: df_filtered[col].mean() for sub, col in SUBDIMENSION_COLUMNS.items() if col in df_filtered.columns}
+    fav_subs = {sub: val for sub, val in sub_avgs.items() if SUBDIMENSION_POLARITY.get(sub) == 'Favorable' and pd.notna(val)}
+    top_fav = max(fav_subs, key=fav_subs.get) if fav_subs else list(SUBDIMENSION_COLUMNS.keys())[0]
+    top_fav_score = round(fav_subs.get(top_fav, 0.0), 1)
+    top_fav_lbl = SUBDIMENSION_LABELS.get(top_fav, {"en": top_fav, "id": top_fav})
+
+    lowest_fav = min(fav_subs, key=fav_subs.get) if fav_subs else list(SUBDIMENSION_COLUMNS.keys())[0]
+    lowest_fav_score = round(fav_subs.get(lowest_fav, 0.0), 1)
+    lowest_fav_lbl = SUBDIMENSION_LABELS.get(lowest_fav, {"en": lowest_fav, "id": lowest_fav})
+
+    # 3. Sub-Dimensi Unfavorable Tertinggi (Beban / Risiko)
+    unfav_subs = {sub: val for sub, val in sub_avgs.items() if SUBDIMENSION_POLARITY.get(sub) == 'Unfavorable' and pd.notna(val)}
+    top_unfav = max(unfav_subs, key=unfav_subs.get) if unfav_subs else list(SUBDIMENSION_COLUMNS.keys())[0]
+    top_unfav_score = round(unfav_subs.get(top_unfav, 0.0), 1)
+    top_unfav_lbl = SUBDIMENSION_LABELS.get(top_unfav, {"en": top_unfav, "id": top_unfav})
+
+    # Sub-dimensi tertinggi per kategori
+    highest_sub_per_category = []
+    for cat_name in categories_list:
+        sub_list = SUBDIMENSIONS_BY_CATEGORY.get(cat_name, [])
+        cat_meta = CATEGORY_METADATA.get(cat_name, {"label": cat_name, "icon": "📁", "short": cat_name})
+        
+        best_sub_name = None
+        best_sub_score = -1.0
+        for s_name in sub_list:
+            col_s = SUBDIMENSION_COLUMNS.get(s_name)
+            if col_s and col_s in df_filtered.columns:
+                val = df_filtered[col_s].mean()
+                if pd.notna(val) and val > best_sub_score:
+                    best_sub_score = val
+                    best_sub_name = s_name
+
+        if best_sub_name is not None:
+            sub_lbl = SUBDIMENSION_LABELS.get(best_sub_name, {"en": best_sub_name, "id": best_sub_name})
+            polarity = SUBDIMENSION_POLARITY.get(best_sub_name, "Favorable")
+            highest_sub_per_category.append({
+                "category_key": cat_name,
+                "category_short": cat_meta.get("short", cat_name),
+                "category_icon": cat_meta.get("icon", "📁"),
+                "sub_name": best_sub_name,
+                "sub_en": sub_lbl["en"],
+                "sub_id": sub_lbl["id"],
+                "score": round(best_sub_score, 1),
+                "polarity": polarity,
+                "level": get_score_level(best_sub_score)
+            })
+
+    # Gender & Ketegangan (Stres)
+    if "Jenis_Kelamin" in df_filtered.columns and "Skor_Segmen2_Stress" in df_filtered.columns:
+        gender_stress = df_filtered.groupby("Jenis_Kelamin")["Skor_Segmen2_Stress"].mean().dropna()
+        if not gender_stress.empty:
+            hi_gender = gender_stress.idxmax()
+            hi_gender_val = round(gender_stress.max(), 1)
+            low_gender = gender_stress.idxmin()
+            low_gender_val = round(gender_stress.min(), 1)
+            gender_tag_txt = f"{hi_gender}: {hi_gender_val} / 42"
+            gender_desc_txt = f"Responden <b>{hi_gender}</b> mencatat rata-rata ketegangan lebih tinggi ({hi_gender_val}) dibanding {low_gender} ({low_gender_val})."
+        else:
+            gender_tag_txt = "Belum Ada Data"
+            gender_desc_txt = "-"
+    else:
+        gender_tag_txt = "Belum Ada Data"
+        gender_desc_txt = "-"
+
+    # Demografi Usia & Total DASS
+    if "Rentang_Usia" in df_filtered.columns and "Total_Skor_Segmen2" in df_filtered.columns:
+        age_dass = df_filtered.groupby("Rentang_Usia")["Total_Skor_Segmen2"].mean().dropna()
+        if not age_dass.empty:
+            hi_age = age_dass.idxmax()
+            hi_age_val = round(age_dass.max(), 1)
+            age_tag_txt = f"{hi_age}"
+            age_desc_txt = f"Kelompok umur <b>{hi_age}</b> menunjukkan akumulasi skor DASS-21 tertinggi (rata-rata: <b>{hi_age_val}</b>/126)."
+        else:
+            age_tag_txt = "Belum Ada Data"
+            age_desc_txt = "-"
+    else:
+        age_tag_txt = "Belum Ada Data"
+        age_desc_txt = "-"
+
+    # Prevalensi Gejala DASS-21
+    dass_prev_counts = {}
+    for d in ["Depresi", "Kecemasan", "Stress"]:
+        col_t = f"Tingkat_{d}"
+        if col_t in df_filtered.columns:
+            tot_n = len(df_filtered)
+            norm_n = (df_filtered[col_t] == "Normal").sum()
+            dass_prev_counts[d] = round(((tot_n - norm_n) / tot_n) * 100, 1) if tot_n > 0 else 0.0
+    if dass_prev_counts:
+        top_prev_d = max(dass_prev_counts, key=dass_prev_counts.get)
+        top_prev_v = dass_prev_counts[top_prev_d]
+        prev_tag_txt = f"{top_prev_d}: {top_prev_v}%"
+        prev_desc_txt = f"Dimensi <b>{top_prev_d}</b> memiliki persentase karyawan terindikasi gejala tertinggi di organisasi."
+    else:
+        prev_tag_txt = "Belum Ada Data"
+        prev_desc_txt = "-"
+
+    # --- BAGIAN 1: KARTU HIGHLIGHT PSIKOSOSIAL KERJA ---
+    st.markdown("#### 🏆 Highlight Faktor Psikososial Kerja")
+    col_h1, col_h2, col_h3, col_h4, col_h5 = st.columns(5)
+
+    # 1. Dimensi Tertinggi
+    with col_h1:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 140px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-blue">📊 Dimensi Tertinggi</span>
+                <div class="hook-val">{top_dim_score:.1f} <span style="font-size:13px;color:#64748b;">/100</span></div>
+                <div class="hook-title">{top_dim_meta.get('icon', '📁')} {top_dim_meta.get('short', top_dim)}</div>
+                <div class="hook-text">Rata-rata skor dimensi tertinggi. Kategori: <b>{top_dim_level}</b>.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Analitik", key="btn_hk_top_dim", use_container_width=True):
+                dialog_top_dimension(top_dim, top_dim_score, df_filtered)
+
+    # 2. Dimensi Terendah (KARTU BARU)
+    with col_h2:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 140px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-purple">📉 Dimensi Terendah</span>
+                <div class="hook-val">{low_dim_score:.1f} <span style="font-size:13px;color:#64748b;">/100</span></div>
+                <div class="hook-title">{low_dim_meta.get('icon', '📁')} {low_dim_meta.get('short', low_dim)}</div>
+                <div class="hook-text">Rata-rata skor dimensi terendah. Kategori: <b>{low_dim_level}</b>.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Analitik", key="btn_hk_low_dim", use_container_width=True):
+                dialog_top_dimension(low_dim, low_dim_score, df_filtered)
+
+    # 3. Kekuatan Utama (Top Favorable)
+    with col_h3:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 140px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-green">🟢 Kekuatan Utama</span>
+                <div class="hook-val">{top_fav_score:.1f} <span style="font-size:13px;color:#64748b;">/100</span></div>
+                <div class="hook-title">{top_fav_lbl['en']}</div>
+                <div class="hook-text">({top_fav_lbl['id']}). Aspek positif paling kuat di organisasi.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Analitik", key="btn_hk_top_fav", use_container_width=True):
+                dialog_top_favorable(top_fav, top_fav_score, df_filtered)
+
+    # 4. Titik Kritis Beban (Top Unfavorable)
+    with col_h4:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 140px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-red">🔴 Titik Kritis Beban</span>
+                <div class="hook-val">{top_unfav_score:.1f} <span style="font-size:13px;color:#64748b;">/100</span></div>
+                <div class="hook-title">{top_unfav_lbl['en']}</div>
+                <div class="hook-text">({top_unfav_lbl['id']}). Pemicu beban kerja/stres tertinggi.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("⚠️ Analitik", key="btn_hk_top_unfav", use_container_width=True):
+                dialog_top_unfavorable(top_unfav, top_unfav_score, df_filtered)
+
+    # 5. Defisit Dukungan (Lowest Favorable)
+    with col_h5:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 140px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-yellow">🟡 Defisit Dukungan</span>
+                <div class="hook-val">{lowest_fav_score:.1f} <span style="font-size:13px;color:#64748b;">/100</span></div>
+                <div class="hook-title">{lowest_fav_lbl['en']}</div>
+                <div class="hook-text">({lowest_fav_lbl['id']}). Aspek positif terendah butuh penguatan.</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Analitik", key="btn_hk_low_fav", use_container_width=True):
+                dialog_lowest_favorable(lowest_fav, lowest_fav_score, df_filtered)
+    
+    # Rincian Sub-Dimensi Tertinggi per Dimensi Utama (Segmen 1)
+    with st.expander("📌 **Rincian Sub-Dimensi Tertinggi dari Setiap Dimensi Utama (8 Dimensi)**", expanded=True):
+        st.caption("Pendorong skor tertinggi di dalam masing-masing dari 8 dimensi psikososial Segmen 1.")
+
+        grid_cols = st.columns(4)
+        for idx, item in enumerate(highest_sub_per_category):
+            col_target = grid_cols[idx % 4]
+            with col_target:
+                tag_class = "hook-tag-green" if item["polarity"] == "Favorable" else "hook-tag-red"
+                tag_label = "🟢 Favorable" if item["polarity"] == "Favorable" else "🔴 Unfavorable"
+                with st.container(border=True):
+                    st.markdown(f"""
+                    <div style="min-height: 110px; margin-bottom: 6px;">
+                        <div style="font-size: 11.5px; font-weight: 700; color: #64748b; margin-bottom: 3px;">
+                            {item['category_icon']} {item['category_short']}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                            <span class="hook-val" style="font-size: 20px;">{item['score']:.1f}</span>
+                            <span class="hook-tag {tag_class}" style="font-size: 9.5px; padding: 2px 7px;">{tag_label}</span>
+                        </div>
+                        <div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.25;">
+                            {item['sub_en']}
+                        </div>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                            ({item['sub_id']})
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    btn_key = f"btn_hk_sub_top_cat_{idx}"
+                    if item["polarity"] == "Favorable":
+                        if st.button("🔍 Analitik", key=btn_key, use_container_width=True):
+                            dialog_top_favorable(item["sub_name"], item["score"], df_filtered)
+                    else:
+                        if st.button("⚠️ Analitik", key=btn_key, use_container_width=True):
+                            dialog_top_unfavorable(item["sub_name"], item["score"], df_filtered)
+                    st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+
+    # --- BAGIAN 2: KARTU HIGHLIGHT KESEHATAN MENTAL & DEMOGRAFI ---
+    st.markdown("#### 🌿 Highlight Segmen 2: Kesehatan Mental Kerja & Demografi (DASS-21)")
+    col_dh1, col_dh2, col_dh3 = st.columns(3)
+
+    with col_dh1:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 125px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-purple">🚻 Demografi Gender</span>
+                <div class="hook-val" style="font-size:20px;">{gender_tag_txt}</div>
+                <div class="hook-title">Gejala Ketegangan (Stres Kerja)</div>
+                <div class="hook-text">{gender_desc_txt}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Buka Analitik Gender & Ketegangan", key="btn_hk_gender", use_container_width=True):
+                dialog_gender_stress(df_filtered)
+
+    with col_dh2:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 125px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-blue">🎂 Demografi Usia</span>
+                <div class="hook-val" style="font-size:20px;">{age_tag_txt}</div>
+                <div class="hook-title">Kelompok Usia Paling Berisiko Gejala</div>
+                <div class="hook-text">{age_desc_txt}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Buka Analitik Demografi Usia", key="btn_hk_age", use_container_width=True):
+                dialog_age_demographics(df_filtered)
+
+    with col_dh3:
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="min-height: 125px; margin-bottom: 8px;">
+                <span class="hook-tag hook-tag-red">⚡ Prevalensi Tertinggi</span>
+                <div class="hook-val" style="font-size:20px;">{prev_tag_txt}</div>
+                <div class="hook-title">Prevalensi Gejala DASS-21 Terbanyak</div>
+                <div class="hook-text">{prev_desc_txt}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Buka Analitik Prevalensi", key="btn_hk_prev", use_container_width=True):
+                dialog_dass_prevalence(df_filtered)
+
+    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+
 total_steps = len(categories_list) + 2  # Step 0: Biodata, 1-8: Kategori, 9: Review, 10: Hasil
 
 if menu == "📝 Form Survei":
@@ -1227,591 +1928,604 @@ elif menu == "📊 Dashboard Hasil Survei":
     if df_filtered.empty:
         st.warning("⚠️ Tidak ada data yang sesuai dengan kombinasi filter yang dipilih.")
     else:
-        # METRIC CARDS
-        total_resp = len(df_filtered)
-        avg_overall = round(df_filtered["Skor_Rata_Rata_Total"].mean(), 1) if "Skor_Rata_Rata_Total" in df_filtered.columns else 0.0
-        avg_health = round(df_filtered["Skor_Kesehatan_Wellbeing"].mean(), 1) if "Skor_Kesehatan_Wellbeing" in df_filtered.columns else 0.0
-        avg_demands = round(df_filtered["Skor_Tuntutan_Kerja"].mean(), 1) if "Skor_Tuntutan_Kerja" in df_filtered.columns else 0.0
+        # Selector Tampilan Halaman Dashboard: HOOK vs DETAIL
+        current_view_idx = 1 if st.session_state.get("dash_view_mode") == "detail" else 0
+        dash_view = st.radio(
+            "Pilih Mode Tampilan Visualisasi:",
+            options=["🪝 Halaman Hook (Ringkasan Eksekutif & Pop-Up Card)", "📊 Halaman Detail (Analisis Mendalam & Seluruh Grafik)"],
+            index=current_view_idx,
+            horizontal=True
+        )
+        st.session_state["dash_view_mode"] = "detail" if "Detail" in dash_view else "hook"
+        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-title">👥 Total Responden</div>
-                <div class="metric-value">{total_resp}</div>
-                <div class="metric-subtitle">Responden terfilter</div>
-            </div>
-            """, unsafe_allow_html=True)
+        if st.session_state["dash_view_mode"] == "hook":
+            render_hook_dashboard(df_filtered, df)
+        else:
+            # METRIC CARDS
+            total_resp = len(df_filtered)
+            avg_overall = round(df_filtered["Skor_Rata_Rata_Total"].mean(), 1) if "Skor_Rata_Rata_Total" in df_filtered.columns else 0.0
+            avg_health = round(df_filtered["Skor_Kesehatan_Wellbeing"].mean(), 1) if "Skor_Kesehatan_Wellbeing" in df_filtered.columns else 0.0
+            avg_demands = round(df_filtered["Skor_Tuntutan_Kerja"].mean(), 1) if "Skor_Tuntutan_Kerja" in df_filtered.columns else 0.0
 
-        with col_m2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-title">❤️ Kesehatan & Well-being</div>
-                <div class="metric-value">{avg_health} <span style="font-size:16px;color:#64748b;">/100</span></div>
-                <div class="metric-subtitle">Indeks kesejahteraan fisik/mental</div>
-            </div>
-            """, unsafe_allow_html=True)
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-title">👥 Total Responden</div>
+                    <div class="metric-value">{total_resp}</div>
+                    <div class="metric-subtitle">Responden terfilter</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+            with col_m2:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-title">❤️ Kesehatan & Well-being</div>
+                    <div class="metric-value">{avg_health} <span style="font-size:16px;color:#64748b;">/100</span></div>
+                    <div class="metric-subtitle">Indeks kesejahteraan fisik/mental</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        # Metrik Ringkasan Segmen 2 (Kesehatan Mental DASS-21)
-        avg_dep = round(df_filtered["Skor_Segmen2_Depresi"].mean(), 1) if "Skor_Segmen2_Depresi" in df_filtered.columns else 0.0
-        avg_anx = round(df_filtered["Skor_Segmen2_Kecemasan"].mean(), 1) if "Skor_Segmen2_Kecemasan" in df_filtered.columns else 0.0
-        avg_str = round(df_filtered["Skor_Segmen2_Stress"].mean(), 1) if "Skor_Segmen2_Stress" in df_filtered.columns else 0.0
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
-        col_m5, col_m6, col_m7 = st.columns(3)
-        with col_m5:
-            st.markdown(f"""
-            <div class="metric-card" style="border-left: 4px solid #3b82f6;">
-                <div class="metric-title">🌧️ Rata-Rata Skor Tingkat Energi dan Suasana Hati (Segmen 2)</div>
-                <div class="metric-value">{avg_dep} <span style="font-size:16px;color:#64748b;">/42</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col_m6:
-            st.markdown(f"""
-            <div class="metric-card" style="border-left: 4px solid #f59e0b;">
-                <div class="metric-title">⚡ Rata-Rata Skor Respons Fisik dan Tingkat Kenyamanan Situasional (Segmen 2)</div>
-                <div class="metric-value">{avg_anx} <span style="font-size:16px;color:#64748b;">/42</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with col_m7:
-            st.markdown(f"""
-            <div class="metric-card" style="border-left: 4px solid #ef4444;">
-                <div class="metric-title">🔥 Rata-Rata Skor Pengelolaan Tekanan atau Ketegangan Kerja (Segmen 2)</div>
-                <div class="metric-value">{avg_str} <span style="font-size:16px;color:#64748b;">/42</span></div>
-                <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
-            </div>
-            """, unsafe_allow_html=True)
+            # Metrik Ringkasan Segmen 2 (Kesehatan Mental DASS-21)
+            avg_dep = round(df_filtered["Skor_Segmen2_Depresi"].mean(), 1) if "Skor_Segmen2_Depresi" in df_filtered.columns else 0.0
+            avg_anx = round(df_filtered["Skor_Segmen2_Kecemasan"].mean(), 1) if "Skor_Segmen2_Kecemasan" in df_filtered.columns else 0.0
+            avg_str = round(df_filtered["Skor_Segmen2_Stress"].mean(), 1) if "Skor_Segmen2_Stress" in df_filtered.columns else 0.0
 
-        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+            col_m5, col_m6, col_m7 = st.columns(3)
+            with col_m5:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #3b82f6;">
+                    <div class="metric-title">🌧️ Rata-Rata Skor Tingkat Energi dan Suasana Hati (Segmen 2)</div>
+                    <div class="metric-value">{avg_dep} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                    <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_m6:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #f59e0b;">
+                    <div class="metric-title">⚡ Rata-Rata Skor Respons Fisik dan Tingkat Kenyamanan Situasional (Segmen 2)</div>
+                    <div class="metric-value">{avg_anx} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                    <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_m7:
+                st.markdown(f"""
+                <div class="metric-card" style="border-left: 4px solid #ef4444;">
+                    <div class="metric-title">🔥 Rata-Rata Skor Pengelolaan Tekanan atau Ketegangan Kerja (Segmen 2)</div>
+                    <div class="metric-value">{avg_str} <span style="font-size:16px;color:#64748b;">/42</span></div>
+                    <div class="metric-subtitle">Rentang DASS-21 (0 - 42)</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-        # -------------------------------------------------------------
-        # GRAFIK 1: DIAGRAM BATANG PROFIL 8 DIMENSI
-        # -------------------------------------------------------------
-        col_g1, col_g2 = st.columns([3, 2])
+            st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
-        with col_g1:
-            with st.container(border=True):
-                st.markdown("#### 📊 Profil Rata-Rata 8 Dimensi Psikososial")
-                st.caption(f"Diagram batang skor rata-rata pada 8 dimensi psikososial (skala 0 - 100) — Filter Validitas: <b>{validity_filter}</b> ({len(df_filtered)} Responden).")
+            # -------------------------------------------------------------
+            # GRAFIK 1: DIAGRAM BATANG PROFIL 8 DIMENSI
+            # -------------------------------------------------------------
+            col_g1, col_g2 = st.columns([3, 2])
 
-                dim_names = [CATEGORY_METADATA[k]["short"] for k in categories_list]
-                dim_cols = [DIMENSION_COLUMNS[k] for k in categories_list]
-                
-                # Rata-rata data terfilter (hanya pengisian valid secara default)
-                filtered_avgs = [round(df_filtered[col].mean(), 1) if col in df_filtered.columns else 0.0 for col in dim_cols]
+            with col_g1:
+                with st.container(border=True):
+                    st.markdown("#### 📊 Profil Rata-Rata 8 Dimensi Psikososial")
+                    st.caption(f"Diagram batang skor rata-rata pada 8 dimensi psikososial (skala 0 - 100) — Filter Validitas: <b>{validity_filter}</b> ({len(df_filtered)} Responden).")
 
-                fig_profile_bar = go.Figure()
+                    dim_names = [CATEGORY_METADATA[k]["short"] for k in categories_list]
+                    dim_cols = [DIMENSION_COLUMNS[k] for k in categories_list]
+                    
+                    # Rata-rata data terfilter (hanya pengisian valid secara default)
+                    filtered_avgs = [round(df_filtered[col].mean(), 1) if col in df_filtered.columns else 0.0 for col in dim_cols]
 
-                fig_profile_bar.add_trace(go.Bar(
-                    x=dim_names,
-                    y=filtered_avgs,
-                    name='Rata-Rata Skor',
-                    marker=dict(
-                        color='#0d9488',
-                        line=dict(color='#0f766e', width=1.5)
-                    ),
-                    text=[f"<b>{v:.1f}</b>" for v in filtered_avgs],
-                    textposition='outside',
-                    textfont=dict(size=11, color='#0f172a'),
-                    cliponaxis=False,
-                    hovertemplate="<b>%{x}</b><br>Skor Rata-Rata: <b>%{y:.1f}</b> / 100<extra></extra>"
-                ))
+                    fig_profile_bar = go.Figure()
 
-                fig_profile_bar.update_layout(
-                    yaxis=dict(range=[0, 115], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
-                    xaxis=dict(title="", tickangle=-25, tickfont=dict(size=11)),
-                    showlegend=False,
-                    margin=dict(l=20, r=20, t=30, b=65),
-                    height=420,
-                    plot_bgcolor="white",
-                    paper_bgcolor="white"
-                )
-                st.plotly_chart(fig_profile_bar, use_container_width=True)
+                    fig_profile_bar.add_trace(go.Bar(
+                        x=dim_names,
+                        y=filtered_avgs,
+                        name='Rata-Rata Skor',
+                        marker=dict(
+                            color='#0d9488',
+                            line=dict(color='#0f766e', width=1.5)
+                        ),
+                        text=[f"<b>{v:.1f}</b>" for v in filtered_avgs],
+                        textposition='outside',
+                        textfont=dict(size=11, color='#0f172a'),
+                        cliponaxis=False,
+                        hovertemplate="<b>%{x}</b><br>Skor Rata-Rata: <b>%{y:.1f}</b> / 100<extra></extra>"
+                    ))
 
-        with col_g2:
-            with st.container(border=True):
-                st.markdown("#### 🏢 Distribusi Responden per Bidang")
-                st.caption("Proporsi kontribusi dan jumlah pengisi dari masing-masing bidang kerja.")
-
-                if "Bidang" in df_filtered.columns and not df_filtered.empty:
-                    bidang_counts = df_filtered["Bidang"].value_counts().reset_index()
-                    bidang_counts.columns = ["Bidang", "Jumlah"]
-                    total_donut = int(bidang_counts["Jumlah"].sum())
-
-                    fig_donut = px.pie(
-                        bidang_counts,
-                        names="Bidang",
-                        values="Jumlah",
-                        hole=0.45,
-                        color="Bidang",
-                        color_discrete_map=BIDANG_COLOR_MAP
-                    )
-                    fig_donut.update_traces(
-                        textposition='inside',
-                        texttemplate="<b>%{label}</b><br>%{value} orang<br>(%{percent})",
-                        hovertemplate="<b>%{label}</b><br>Jumlah Pengisi: <b>%{value} orang</b><br>Proporsi: <b>%{percent}</b><extra></extra>"
-                    )
-                    fig_donut.update_layout(
+                    fig_profile_bar.update_layout(
+                        yaxis=dict(range=[0, 115], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
+                        xaxis=dict(title="", tickangle=-25, tickfont=dict(size=11)),
                         showlegend=False,
-                        margin=dict(l=10, r=10, t=20, b=20),
-                        height=420,
-                        annotations=[dict(text=f"Total Pengisi<br><b>{total_donut}</b>", x=0.5, y=0.5, font_size=13.5, showarrow=False, font=dict(color="#0f172a"))]
-                    )
-                    st.plotly_chart(fig_donut, use_container_width=True)
-                else:
-                    st.info("Belum ada data responden untuk ditampilkan.")
-
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-        # -------------------------------------------------------------
-        # GRAFIK 2: PERBANDINGAN SKOR DIMENSI ANTAR BIDANG + RINCIAN SUB-DIMENSI
-        # -------------------------------------------------------------
-        with st.container(border=True):
-            st.markdown("#### 📊 Rata-Rata Dimensi Antar Bidang Kerja (Segmen 1)")
-            st.caption("Bandingkan skor rata-rata dimensi antar bidang kerja, filter per bidang/dimensi, serta masuk ke bidang tertentu untuk melihat rincian per sub-dimensi Segmen 1.")
-
-            available_bidang_in_df = [b for b in BIDANG_OPTIONS if "Bidang" in df_filtered.columns and b in df_filtered["Bidang"].unique()]
-            extra_bidang = [b for b in df_filtered["Bidang"].dropna().unique() if b not in available_bidang_in_df] if "Bidang" in df_filtered.columns else []
-            bidang_opts_comp = available_bidang_in_df + extra_bidang
-
-            col_cmp_f1, col_cmp_f2 = st.columns([1.2, 1.8])
-            with col_cmp_f1:
-                bidang_mode_opts = ["Semua Bidang", "Pilih Beberapa Bidang..."] + bidang_opts_comp
-                selected_bidang_mode = st.selectbox(
-                    "🏢 Filter Per Bidang:",
-                    options=bidang_mode_opts,
-                    key="dash_comp_bidang_mode"
-                )
-            with col_cmp_f2:
-                selected_dims_comp = st.multiselect(
-                    "📁 Filter Dimensi (Segmen 1):",
-                    options=categories_list,
-                    default=categories_list,
-                    format_func=lambda x: CATEGORY_METADATA.get(x, {}).get("short", x),
-                    key="dash_comp_dim_multiselect"
-                )
-
-            if selected_bidang_mode == "Semua Bidang":
-                active_bidang_list = bidang_opts_comp
-            elif selected_bidang_mode == "Pilih Beberapa Bidang...":
-                active_bidang_list = st.multiselect(
-                    "Pilih Bidang Kerja yang Dibandingkan:",
-                    options=bidang_opts_comp,
-                    default=bidang_opts_comp[:2] if len(bidang_opts_comp) >= 2 else bidang_opts_comp,
-                    key="dash_comp_bidang_multi"
-                )
-            else:
-                active_bidang_list = [selected_bidang_mode]
-
-            active_dims_list = selected_dims_comp if selected_dims_comp else categories_list
-
-            if not active_bidang_list:
-                st.info("Pilih minimal satu bidang kerja pada filter di atas untuk menampilkan visualisasi.")
-            else:
-                comparison_rows = []
-                for b in active_bidang_list:
-                    b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
-                    if not b_df.empty:
-                        for k in active_dims_list:
-                            col = DIMENSION_COLUMNS[k]
-                            short_name = CATEGORY_METADATA[k]["short"]
-                            val = round(b_df[col].mean(), 1) if col in b_df.columns else 0.0
-                            comparison_rows.append({
-                                "Bidang": b,
-                                "Dimensi": short_name,
-                                "Skor": val
-                            })
-
-                if not comparison_rows:
-                    st.warning("Tidak ada data responden untuk kombinasi bidang dan filter yang dipilih.")
-                else:
-                    df_comp = pd.DataFrame(comparison_rows)
-                    if len(active_bidang_list) == 1:
-                        single_bidang = active_bidang_list[0]
-                        b_count = len(df_filtered[df_filtered["Bidang"] == single_bidang]) if "Bidang" in df_filtered.columns else 0
-                        fig_bar = px.bar(
-                            df_comp,
-                            x="Dimensi",
-                            y="Skor",
-                            color="Bidang",
-                            color_discrete_map=BIDANG_COLOR_MAP,
-                            text="Skor",
-                            title=f"Profil Skor Dimensi Segmen 1 — Bidang {single_bidang} ({b_count} Responden)"
-                        )
-                        fig_bar.update_layout(showlegend=False)
-                    else:
-                        fig_bar = px.bar(
-                            df_comp,
-                            x="Dimensi",
-                            y="Skor",
-                            color="Bidang",
-                            barmode="group",
-                            color_discrete_map=BIDANG_COLOR_MAP,
-                            text="Skor",
-                            title="Rata-Rata Dimensi Antar Bidang Kerja Terpilih"
-                        )
-                        fig_bar.update_layout(
-                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                        )
-
-                    fig_bar.update_traces(textposition="outside", cliponaxis=False, textfont=dict(size=10.5))
-                    fig_bar.update_layout(
-                        yaxis=dict(range=[0, 112], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
-                        xaxis=dict(title="", tickangle=-15),
-                        height=440,
-                        margin=dict(l=20, r=20, t=65, b=50),
+                        height=380,
+                        margin=dict(l=20, r=20, t=30, b=50),
                         plot_bgcolor="white",
                         paper_bgcolor="white"
                     )
-                    st.plotly_chart(fig_bar, use_container_width=True)
 
-                    # RINCIAN PER SUB-DIMENSI SEGMEN 1
-                    st.divider()
-                    if len(active_bidang_list) == 1:
-                        single_bidang = active_bidang_list[0]
-                        df_single_b = df_filtered[df_filtered["Bidang"] == single_bidang]
-                        st.markdown(f"##### 🔬 Rincian Per Sub-Dimensi Segmen 1 — Bidang {single_bidang}")
-                        st.caption("Detail skor per sub-dimensi Segmen 1 di dalam bidang yang dipilih beserta status risiko Favorable/Unfavorable.")
+                    st.plotly_chart(fig_profile_bar, use_container_width=True)
 
-                        subdim_cat_opts = ["SEMUA"] + categories_list
-                        selected_cat_inside = st.selectbox(
-                            "📁 Pilih Dimensi Segmen 1 untuk Melihat Sub-Dimensi:",
-                            options=subdim_cat_opts,
-                            index=1,
-                            format_func=lambda x: "📋 Semua Dimensi (45 Sub-Dimensi)" if x == "SEMUA" else f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
-                            key="dash_comp_inside_subdim_cat"
-                        )
+            with col_g2:
+                with st.container(border=True):
+                    st.markdown("#### 🍩 Distribusi Responden per Bidang")
+                    st.caption("Proporsi dan jumlah responden terfilter berdasarkan bidang kerja.")
 
-                        cats_to_show = categories_list if selected_cat_inside == "SEMUA" else [selected_cat_inside]
-                        sub_items, sub_tbl = collect_subdimension_items_from_df(df_single_b, cats_to_show)
-                        cat_title = "Semua Dimensi (45 Sub-Dimensi)" if selected_cat_inside == "SEMUA" else CATEGORY_METADATA.get(selected_cat_inside, {}).get("label", selected_cat_inside)
+                    if "Bidang" in df_filtered.columns and not df_filtered.empty:
+                        bidang_counts = df_filtered["Bidang"].value_counts().reset_index()
+                        bidang_counts.columns = ["Bidang", "Jumlah"]
+                        total_pengisi = len(df_filtered)
 
-                        fig_inside_sub = build_subdimension_hbar_chart(
-                            sub_items,
-                            title_text=f"Sub-Dimensi Segmen 1: {cat_title} — {single_bidang}",
-                            xaxis_title="Skor Rata-Rata Sub-Dimensi (0 - 100)"
-                        )
-                        st.plotly_chart(fig_inside_sub, use_container_width=True)
-                        with st.expander(f"📋 Tabel Rincian Skor ({len(sub_tbl)} Sub-Dimensi)", expanded=(selected_cat_inside != "SEMUA")):
-                            st.dataframe(pd.DataFrame(sub_tbl), use_container_width=True, hide_index=True)
-                    else:
-                        with st.expander("🔍 Bandingkan Per Sub-Dimensi Segmen 1 Antar Bidang Terpilih", expanded=False):
-                            st.caption("Pilih satu dimensi Segmen 1 untuk membandingkan skor setiap sub-dimensi antar bidang terpilih, atau pilih satu bidang spesifik pada dropdown 'Filter Per Bidang' di atas untuk melihat rincian sub-dimensi di dalam bidangnya.")
-                            comp_sub_cat = st.selectbox(
-                                "📁 Pilih Dimensi Segmen 1:",
-                                options=categories_list,
-                                format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
-                                key="dash_comp_multi_subdim_cat"
-                            )
-                            subs_for_cat = SUBDIMENSIONS_BY_CATEGORY.get(comp_sub_cat, [])
-                            sub_comp_rows = []
-                            for b in active_bidang_list:
-                                b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
-                                if not b_df.empty:
-                                    for s_name in subs_for_cat:
-                                        col_s = SUBDIMENSION_COLUMNS.get(s_name)
-                                        val = round(pd.to_numeric(b_df[col_s], errors="coerce").dropna().mean(), 1) if col_s and col_s in b_df.columns else 0.0
-                                        lbl = SUBDIMENSION_LABELS.get(s_name, {"en": s_name, "id": s_name})
-                                        sub_comp_rows.append({
-                                            "Bidang": b,
-                                            "Sub-Dimensi": f"{lbl['en']} ({lbl['id']})",
-                                            "Skor": val
-                                        })
-                            if sub_comp_rows:
-                                df_sub_comp = pd.DataFrame(sub_comp_rows)
-                                fig_sub_comp = px.bar(
-                                    df_sub_comp,
-                                    y="Sub-Dimensi",
-                                    x="Skor",
-                                    color="Bidang",
-                                    barmode="group",
-                                    orientation="h",
-                                    color_discrete_map=BIDANG_COLOR_MAP,
-                                    text="Skor",
-                                    title=f"Sub-Dimensi: {CATEGORY_METADATA.get(comp_sub_cat, {}).get('label', comp_sub_cat)}"
-                                )
-                                fig_sub_comp.update_traces(textposition="outside", cliponaxis=False, textfont=dict(size=10))
-                                fig_sub_comp.update_layout(
-                                    xaxis=dict(range=[0, 115], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
-                                    yaxis=dict(title="", autorange="reversed"),
-                                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                                    height=max(420, len(subs_for_cat) * 85),
-                                    margin=dict(l=20, r=40, t=70, b=40),
-                                    plot_bgcolor="white",
-                                    paper_bgcolor="white"
-                                )
-                                st.plotly_chart(fig_sub_comp, use_container_width=True)
-
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-        # -------------------------------------------------------------
-        # GRAFIK: ANALISIS MENDALAM SKOR SUB-DIMENSI (45 SUB-BIDANG)
-        # -------------------------------------------------------------
-        with st.container(border=True):
-            st.markdown("#### 🔬 Visualisasi Horizontal Barchart per Sub-Bidang")
-            st.caption("Pilih asal bidang kerja dan dimensi utama untuk menganalisis skor profil sub-dimensi dalam bentuk grafik batang horizontal.")
-
-            st.info("""
-            📌 **Ketentuan Penilaian Sub-Bidang**:
-            * **Rumus Skor Sub-Bidang**: $\\text{Skor} = \\frac{\\sum \\text{Skor Butir}}{\\text{Jumlah Butir}}$
-            * **Rentang Kategori**: **Rendah** (0 - 33,33) | **Sedang** (33,34 - 66,66) | **Tinggi** (66,67 - 100)
-            * **Sifat Favorable**: Skor Tinggi = 🟢 **Baik / Risiko Rendah**, Skor Rendah = 🔴 **Kurang / Risiko Tinggi**
-            * **Sifat Unfavorable**: Skor Rendah = 🟢 **Baik / Risiko Rendah**, Skor Tinggi = 🔴 **Bahaya / Risiko Tinggi**
-            """)
-
-            col_d1, col_d2 = st.columns(2)
-            with col_d1:
-                bidang_selector_options = ["Semua Bidang (Rata-rata Keseluruhan)"] + BIDANG_OPTIONS
-                selected_bidang_dash = st.selectbox(
-                    "🏢 Pilih Asal Bidang Kerja:",
-                    options=bidang_selector_options,
-                    key="dash_selected_bidang_filter"
-                )
-
-            with col_d2:
-                selected_sub_category = st.selectbox(
-                    "📁 Pilih Dimensi Utama (Kategori):",
-                    options=categories_list,
-                    format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
-                    key="dash_selected_sub_cat"
-                )
-
-            # Filter data sesuai bidang yang dipilih
-            if selected_bidang_dash == "Semua Bidang (Rata-rata Keseluruhan)":
-                df_scope = df_filtered
-                scope_label = "Seluruh Bidang (Rata-rata Keseluruhan)"
-            else:
-                df_scope = df_filtered[df_filtered["Bidang"] == selected_bidang_dash] if "Bidang" in df_filtered.columns else pd.DataFrame()
-                scope_label = f"Bidang {selected_bidang_dash}"
-
-            subs_in_cat = SUBDIMENSIONS_BY_CATEGORY.get(selected_sub_category, [])
-            c_meta = CATEGORY_METADATA.get(selected_sub_category, {"label": selected_sub_category, "icon": "📁"})
-
-            if df_scope.empty:
-                st.warning(f"Belum ada data responden untuk {scope_label}.")
-            elif subs_in_cat:
-                chart_items, tbl_rows = collect_subdimension_items_from_df(df_scope, [selected_sub_category])
-                fig_sub_hbar = build_subdimension_hbar_chart(
-                    chart_items,
-                    title_text=f"📊 Barchart Horizontal: {c_meta.get('label', selected_sub_category)} — {scope_label}",
-                    xaxis_title="Skor Rata-Rata Sub-Bidang (0 - 100)"
-                )
-                st.plotly_chart(fig_sub_hbar, use_container_width=True)
-
-                # Tabel Rincian Data Native Streamlit
-                st.markdown(f"**Tabel Rincian Skor ({len(subs_in_cat)} Sub-Bidang):**")
-                st.dataframe(pd.DataFrame(tbl_rows), use_container_width=True, hide_index=True)
-                    
-
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-
-
-        # -------------------------------------------------------------
-        # GRAFIK 4: ANALISIS KESEHATAN MENTAL SEGMEN 2 (DASS-21)
-        # -------------------------------------------------------------
-        with st.container(border=True):
-            st.markdown("#### 🌿 Analisis Segmen 2: Kondisi Tingkat Energi dan Suasana Hati, Respons Fisik dan  tingkat Kenyamanan Situasional, & Pengelolaan Tekanan atau Ketegangan Kerja (DASS-21)")
-            st.caption("Pemantauan skor dan tingkat keparahan DASS-21 berdasarkan bidang kerja dan kategori keparahan.")
-
-            # Filter Per Bidang untuk Segmen 2
-            available_bidang_seg2 = [b for b in BIDANG_OPTIONS if "Bidang" in df_filtered.columns and b in df_filtered["Bidang"].unique()]
-            extra_b_seg2 = [b for b in df_filtered["Bidang"].dropna().unique() if b not in available_bidang_seg2] if "Bidang" in df_filtered.columns else []
-            all_b_seg2 = available_bidang_seg2 + extra_b_seg2
-
-            col_fb1, col_fb2 = st.columns([1.2, 1.8])
-            with col_fb1:
-                selected_seg2_bidang = st.selectbox(
-                    "🏢 Filter Asal Bidang Kerja (Segmen 2):",
-                    options=["Semua Bidang"] + all_b_seg2,
-                    key="dash_seg2_bidang_filter"
-                )
-            with col_fb2:
-                dim_choice = st.selectbox(
-                    "📊 Pilih Dimensi untuk Distribusi Keparahan:",
-                    ["Depresi", "Kecemasan", "Stress"],
-                    key="dash_dass_dim_sel"
-                )
-
-            # Tentukan dataset scope untuk Segmen 2
-            if selected_seg2_bidang == "Semua Bidang":
-                df_seg2_scope = df_filtered
-                seg2_title_suffix = "Semua Bidang"
-            else:
-                df_seg2_scope = df_filtered[df_filtered["Bidang"] == selected_seg2_bidang] if "Bidang" in df_filtered.columns else pd.DataFrame()
-                seg2_title_suffix = f"Bidang {selected_seg2_bidang}"
-
-            col_dass1, col_dass2 = st.columns([3, 2])
-            with col_dass1:
-                if selected_seg2_bidang == "Semua Bidang":
-                    # Perbandingan Rata-Rata DASS-21 per Bidang Kerja
-                    dass_comp_rows = []
-                    for b in all_b_seg2:
-                        b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
-                        if not b_df.empty:
-                            for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
-                                val = round(b_df[col_name].mean(), 1) if col_name in b_df.columns else 0.0
-                                short_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
-                                dass_comp_rows.append({"Bidang": b, "Dimensi": short_dim, "Skor": val})
-
-                    if dass_comp_rows:
-                        df_dass_comp = pd.DataFrame(dass_comp_rows)
-                        fig_dass_bidang = px.bar(
-                            df_dass_comp,
-                            x="Dimensi",
-                            y="Skor",
-                            color="Bidang",
-                            barmode="group",
-                            color_discrete_map=BIDANG_COLOR_MAP,
-                            text="Skor",
-                            title="Rata-Rata Skor DASS-21 per Bidang Kerja"
-                        )
-                        fig_dass_bidang.update_traces(
-                            texttemplate="<b>%{y:.1f}</b>",
-                            textposition="outside",
-                            cliponaxis=False
-                        )
-                        fig_dass_bidang.update_layout(
-                            yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)", gridcolor="#f1f5f9"),
-                            xaxis=dict(title=""),
-                            height=380,
-                            margin=dict(l=20, r=20, t=40, b=30),
-                            plot_bgcolor="white",
-                            paper_bgcolor="white"
-                        )
-                        st.plotly_chart(fig_dass_bidang, use_container_width=True)
-                    else:
-                        st.info("Belum ada data rekaman DASS-21.")
-                else:
-                    # Tampilkan Skor Rata-rata 3 Dimensi untuk bidang yang dipilih
-                    single_dass_rows = []
-                    for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
-                        short_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
-                        val = round(df_seg2_scope[col_name].mean(), 1) if col_name in df_seg2_scope.columns and not df_seg2_scope.empty else 0.0
-                        sev = get_dass_severity(short_dim, val)
-                        single_dass_rows.append({"Dimensi": short_dim, "Skor": val, "Kategori Keparahan": sev})
-                    
-                    if single_dass_rows:
-                        df_single_dass = pd.DataFrame(single_dass_rows)
-                        fig_dass_single = px.bar(
-                            df_single_dass,
-                            x="Dimensi",
-                            y="Skor",
-                            color="Dimensi",
-                            color_discrete_map={"Depresi": "#3b82f6", "Kecemasan": "#f59e0b", "Stress": "#ef4444"},
-                            text="Skor",
-                            title=f"Skor Rata-Rata DASS-21: {selected_seg2_bidang} ({len(df_seg2_scope)} Responden)"
-                        )
-                        fig_dass_single.update_traces(
-                            texttemplate="<b>%{y:.1f}</b>",
-                            textposition="outside",
-                            cliponaxis=False
-                        )
-                        fig_dass_single.update_layout(
-                            yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)", gridcolor="#f1f5f9"),
-                            xaxis=dict(title=""),
-                            showlegend=False,
-                            height=380,
-                            margin=dict(l=20, r=20, t=40, b=30),
-                            plot_bgcolor="white",
-                            paper_bgcolor="white"
-                        )
-                        st.plotly_chart(fig_dass_single, use_container_width=True)
-                    else:
-                        st.info(f"Belum ada data responden untuk {selected_seg2_bidang}.")
-
-            with col_dass2:
-                # Distribusi Tingkat Keparahan Stress / Depresi / Kecemasan (berdasarkan df_seg2_scope)
-                sev_col = f"Tingkat_{dim_choice}"
-                if sev_col in df_seg2_scope.columns and not df_seg2_scope.empty:
-                    cat_order = ["Normal", "Ringan", "Sedang", "Berat", "Sangat Berat"]
-                    sev_series = pd.Categorical(df_seg2_scope[sev_col], categories=cat_order, ordered=True)
-                    sev_counts = sev_series.value_counts().reset_index()
-                    sev_counts.columns = ["Tingkat", "Jumlah"]
-                    sev_counts = sev_counts[sev_counts["Jumlah"] > 0]
-                    total_sev_pengisi = int(sev_counts["Jumlah"].sum())
-
-                    if not sev_counts.empty:
-                        fig_sev_pie = px.pie(
-                            sev_counts,
-                            names="Tingkat",
+                        fig_donut = px.pie(
+                            bidang_counts,
+                            names="Bidang",
                             values="Jumlah",
-                            hole=0.4,
-                            title=f"Distribusi Tingkat {dim_choice} ({seg2_title_suffix})",
-                            color="Tingkat",
-                            color_discrete_map={
-                                "Normal": "#10b981",
-                                "Ringan": "#3b82f6",
-                                "Sedang": "#f59e0b",
-                                "Berat": "#ea580c",
-                                "Sangat Berat": "#dc2626"
-                            },
-                            category_orders={"Tingkat": cat_order}
+                            hole=0.45,
+                            color="Bidang",
+                            color_discrete_map=BIDANG_COLOR_MAP
                         )
-                        fig_sev_pie.update_traces(
+                        fig_donut.update_traces(
                             textposition='inside',
                             texttemplate="<b>%{label}</b><br>%{value} orang<br>(%{percent})",
-                            hovertemplate="<b>Tingkat %{label}</b><br>Jumlah Pengisi: <b>%{value} orang</b><br>Proporsi: <b>%{percent}</b><extra></extra>"
+                            hovertemplate="<b>%{label}</b><br>Jumlah Pengisi: <b>%{value} orang</b><br>Proporsi: <b>%{percent}</b><extra></extra>"
                         )
-                        fig_sev_pie.update_layout(
+                        fig_donut.update_layout(
                             height=380,
-                            margin=dict(l=10, r=10, t=40, b=20),
-                            annotations=[dict(text=f"Total Pengisi<br><b>{total_sev_pengisi}</b>", x=0.5, y=0.5, font_size=13, showarrow=False, font=dict(color="#0f172a"))]
+                            margin=dict(l=10, r=10, t=30, b=20),
+                            showlegend=False,
+                            annotations=[dict(text=f"Total Pengisi<br><b>{total_pengisi}</b>", x=0.5, y=0.5, font_size=13, showarrow=False, font=dict(color="#0f172a"))]
                         )
-                        st.plotly_chart(fig_sev_pie, use_container_width=True)
+                        st.plotly_chart(fig_donut, use_container_width=True)
                     else:
-                        st.info(f"Tidak ada data tingkat {dim_choice} pada filter ini.")
+                        st.info("Belum ada data distribusi bidang.")
+
+            # -------------------------------------------------------------
+            # GRAFIK 2: PERBANDINGAN SKOR DIMENSI ANTAR BIDANG + RINCIAN SUB-DIMENSI
+            # -------------------------------------------------------------
+            with st.container(border=True):
+                st.markdown("#### 📊 Rata-Rata Dimensi Antar Bidang Kerja (Segmen 1)")
+                st.caption("Bandingkan skor rata-rata dimensi antar bidang kerja, filter per bidang/dimensi, serta masuk ke bidang tertentu untuk melihat rincian per sub-dimensi Segmen 1.")
+
+                available_bidang_in_df = [b for b in BIDANG_OPTIONS if "Bidang" in df_filtered.columns and b in df_filtered["Bidang"].unique()]
+                extra_bidang = [b for b in df_filtered["Bidang"].dropna().unique() if b not in available_bidang_in_df] if "Bidang" in df_filtered.columns else []
+                bidang_opts_comp = available_bidang_in_df + extra_bidang
+
+                col_cmp_f1, col_cmp_f2 = st.columns([1.2, 1.8])
+                with col_cmp_f1:
+                    bidang_mode_opts = ["Semua Bidang", "Pilih Beberapa Bidang..."] + bidang_opts_comp
+                    selected_bidang_mode = st.selectbox(
+                        "🏢 Filter Per Bidang:",
+                        options=bidang_mode_opts,
+                        key="dash_comp_bidang_mode"
+                    )
+                with col_cmp_f2:
+                    selected_dims_comp = st.multiselect(
+                        "📁 Filter Dimensi Faktor Psikososia:",
+                        options=categories_list,
+                        default=categories_list,
+                        format_func=lambda x: CATEGORY_METADATA.get(x, {}).get("short", x),
+                        key="dash_comp_dim_multiselect"
+                    )
+
+                if selected_bidang_mode == "Semua Bidang":
+                    active_bidang_list = bidang_opts_comp
+                elif selected_bidang_mode == "Pilih Beberapa Bidang...":
+                    active_bidang_list = st.multiselect(
+                        "Pilih Bidang Kerja yang Dibandingkan:",
+                        options=bidang_opts_comp,
+                        default=bidang_opts_comp[:2] if len(bidang_opts_comp) >= 2 else bidang_opts_comp,
+                        key="dash_comp_bidang_multi"
+                    )
                 else:
-                    st.info(f"Belum ada data rekaman tingkat {dim_choice} Segmen 2 untuk {seg2_title_suffix}.")
+                    active_bidang_list = [selected_bidang_mode]
 
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+                active_dims_list = selected_dims_comp if selected_dims_comp else categories_list
 
-        # -------------------------------------------------------------
-        # TABEL DATA LENGKAP & EXPORT KE EXCEL / CSV
-        # -------------------------------------------------------------
-        with st.container(border=True):
-            st.markdown("#### 📑 Rekapitulasi Data Responden")
+                if not active_bidang_list:
+                    st.info("Pilih minimal satu bidang kerja pada filter di atas untuk menampilkan visualisasi.")
+                else:
+                    comparison_rows = []
+                    for b in active_bidang_list:
+                        b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                        if not b_df.empty:
+                            for k in active_dims_list:
+                                col = DIMENSION_COLUMNS[k]
+                                short_name = CATEGORY_METADATA[k]["short"]
+                                val = round(b_df[col].mean(), 1) if col in b_df.columns else 0.0
+                                comparison_rows.append({
+                                    "Bidang": b,
+                                    "Dimensi": short_name,
+                                    "Skor": val
+                                })
+
+                    if not comparison_rows:
+                        st.warning("Tidak ada data responden untuk kombinasi bidang dan filter yang dipilih.")
+                    else:
+                        df_comp = pd.DataFrame(comparison_rows)
+                        if len(active_bidang_list) == 1:
+                            single_bidang = active_bidang_list[0]
+                            b_count = len(df_filtered[df_filtered["Bidang"] == single_bidang]) if "Bidang" in df_filtered.columns else 0
+                            fig_bar = px.bar(
+                                df_comp,
+                                x="Dimensi",
+                                y="Skor",
+                                color="Bidang",
+                                color_discrete_map=BIDANG_COLOR_MAP,
+                                text="Skor",
+                                title=f"Profil Skor Dimensi Faktor Psikososial — Bidang {single_bidang} ({b_count} Responden)"
+                            )
+                            fig_bar.update_layout(showlegend=False)
+                        else:
+                            fig_bar = px.bar(
+                                df_comp,
+                                x="Dimensi",
+                                y="Skor",
+                                color="Bidang",
+                                barmode="group",
+                                color_discrete_map=BIDANG_COLOR_MAP,
+                                text="Skor",
+                                title="Rata-Rata Dimensi Antar Bidang Kerja Terpilih"
+                            )
+                            fig_bar.update_layout(
+                                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                            )
+
+                        fig_bar.update_traces(textposition="outside", cliponaxis=False, textfont=dict(size=10.5))
+                        fig_bar.update_layout(
+                            yaxis=dict(range=[0, 112], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
+                            xaxis=dict(title="", tickangle=-15),
+                            height=440,
+                            margin=dict(l=20, r=20, t=65, b=50),
+                            plot_bgcolor="white",
+                            paper_bgcolor="white"
+                        )
+                        st.plotly_chart(fig_bar, use_container_width=True)
+
+                        # RINCIAN PER SUB-DIMENSI SEGMEN 1
+                        st.divider()
+                        if len(active_bidang_list) == 1:
+                            single_bidang = active_bidang_list[0]
+                            df_single_b = df_filtered[df_filtered["Bidang"] == single_bidang]
+                            st.markdown(f"##### 🔬 Rincian Per Sub-Dimensi Faktor Psikososial — Bidang {single_bidang}")
+                            st.caption("Detail skor per sub-dimensi Faktor Psikososial di dalam bidang yang dipilih beserta status risiko Favorable/Unfavorable.")
+
+                            subdim_cat_opts = ["SEMUA"] + categories_list
+                            selected_cat_inside = st.selectbox(
+                                "📁 Pilih Dimensi Segmen 1 untuk Melihat Sub-Dimensi:",
+                                options=subdim_cat_opts,
+                                index=1,
+                                format_func=lambda x: "📋 Semua Dimensi (45 Sub-Dimensi)" if x == "SEMUA" else f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
+                                key="dash_comp_inside_subdim_cat"
+                            )
+
+                            cats_to_show = categories_list if selected_cat_inside == "SEMUA" else [selected_cat_inside]
+                            sub_items, sub_tbl = collect_subdimension_items_from_df(df_single_b, cats_to_show)
+                            cat_title = "Semua Dimensi (45 Sub-Dimensi)" if selected_cat_inside == "SEMUA" else CATEGORY_METADATA.get(selected_cat_inside, {}).get("label", selected_cat_inside)
+
+                            fig_inside_sub = build_subdimension_hbar_chart(
+                                sub_items,
+                                title_text=f"Sub-Dimensi Faktor Psikososial: {cat_title} — {single_bidang}",
+                                xaxis_title="Skor Rata-Rata Sub-Dimensi (0 - 100)"
+                            )
+                            st.plotly_chart(fig_inside_sub, use_container_width=True)
+                            with st.expander(f"📋 Tabel Rincian Skor ({len(sub_tbl)} Sub-Dimensi)", expanded=(selected_cat_inside != "SEMUA")):
+                                st.dataframe(pd.DataFrame(sub_tbl), use_container_width=True, hide_index=True)
+                        else:
+                            with st.expander("🔍 Bandingkan Per Sub-Dimensi Antar Bidang Terpilih", expanded=False):
+                                st.caption("Pilih satu dimensi faktor psikososia untuk membandingkan skor setiap sub-dimensi antar bidang terpilih, atau pilih satu bidang spesifik pada dropdown 'Filter Per Bidang' di atas untuk melihat rincian sub-dimensi di dalam bidangnya.")
+                                comp_sub_cat = st.selectbox(
+                                    "📁 Pilih Dimensi Faktor Psikososial:",
+                                    options=categories_list,
+                                    format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
+                                    key="dash_comp_multi_subdim_cat"
+                                )
+                                subs_for_cat = SUBDIMENSIONS_BY_CATEGORY.get(comp_sub_cat, [])
+                                sub_comp_rows = []
+                                for b in active_bidang_list:
+                                    b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                                    if not b_df.empty:
+                                        for s_name in subs_for_cat:
+                                            col_s = SUBDIMENSION_COLUMNS.get(s_name)
+                                            val = round(pd.to_numeric(b_df[col_s], errors="coerce").dropna().mean(), 1) if col_s and col_s in b_df.columns else 0.0
+                                            lbl = SUBDIMENSION_LABELS.get(s_name, {"en": s_name, "id": s_name})
+                                            sub_comp_rows.append({
+                                                "Bidang": b,
+                                                "Sub-Dimensi": f"{lbl['en']} ({lbl['id']})",
+                                                "Skor": val
+                                            })
+                                if sub_comp_rows:
+                                    df_sub_comp = pd.DataFrame(sub_comp_rows)
+                                    fig_sub_comp = px.bar(
+                                        df_sub_comp,
+                                        y="Sub-Dimensi",
+                                        x="Skor",
+                                        color="Bidang",
+                                        barmode="group",
+                                        orientation="h",
+                                        color_discrete_map=BIDANG_COLOR_MAP,
+                                        text="Skor",
+                                        title=f"Sub-Dimensi: {CATEGORY_METADATA.get(comp_sub_cat, {}).get('label', comp_sub_cat)}"
+                                    )
+                                    fig_sub_comp.update_traces(textposition="outside", cliponaxis=False, textfont=dict(size=10))
+                                    fig_sub_comp.update_layout(
+                                        xaxis=dict(range=[0, 115], title="Skor Rata-Rata (0 - 100)", gridcolor="#f1f5f9"),
+                                        yaxis=dict(title="", autorange="reversed"),
+                                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                                        height=max(420, len(subs_for_cat) * 85),
+                                        margin=dict(l=20, r=40, t=70, b=40),
+                                        plot_bgcolor="white",
+                                        paper_bgcolor="white"
+                                    )
+                                    st.plotly_chart(fig_sub_comp, use_container_width=True)
+
+            st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+            # -------------------------------------------------------------
+            # GRAFIK: ANALISIS MENDALAM SKOR SUB-DIMENSI (45 SUB-BIDANG)
+            # -------------------------------------------------------------
+            with st.container(border=True):
+                st.markdown("#### 🔬 Visualisasi Horizontal Barchart per Sub-Bidang")
+                st.caption("Pilih asal bidang kerja dan dimensi utama untuk menganalisis skor profil sub-dimensi dalam bentuk grafik batang horizontal.")
+
+                st.info("""
+                📌 **Ketentuan Penilaian Sub-Bidang**:
+                * **Rumus Skor Sub-Bidang**: $\\text{Skor} = \\frac{\\sum \\text{Skor Butir}}{\\text{Jumlah Butir}}$
+                * **Rentang Kategori**: **Rendah** (0 - 33,33) | **Sedang** (33,34 - 66,66) | **Tinggi** (66,67 - 100)
+                * **Sifat Favorable**: Skor Tinggi = 🟢 **Baik / Risiko Rendah**, Skor Rendah = 🔴 **Kurang / Risiko Tinggi**
+                * **Sifat Unfavorable**: Skor Rendah = 🟢 **Baik / Risiko Rendah**, Skor Tinggi = 🔴 **Bahaya / Risiko Tinggi**
+                """)
+
+                col_d1, col_d2 = st.columns(2)
+                with col_d1:
+                    bidang_selector_options = ["Semua Bidang (Rata-rata Keseluruhan)"] + BIDANG_OPTIONS
+                    selected_bidang_dash = st.selectbox(
+                        "🏢 Pilih Asal Bidang Kerja:",
+                        options=bidang_selector_options,
+                        key="dash_selected_bidang_filter"
+                    )
+
+                with col_d2:
+                    selected_sub_category = st.selectbox(
+                        "📁 Pilih Dimensi Utama (Kategori):",
+                        options=categories_list,
+                        format_func=lambda x: f"{CATEGORY_METADATA.get(x, {}).get('icon', '📁')} {CATEGORY_METADATA.get(x, {}).get('label', x)}",
+                        key="dash_selected_sub_cat"
+                    )
+
+                # Filter data sesuai bidang yang dipilih
+                if selected_bidang_dash == "Semua Bidang (Rata-rata Keseluruhan)":
+                    df_scope = df_filtered
+                    scope_label = "Seluruh Bidang (Rata-rata Keseluruhan)"
+                else:
+                    df_scope = df_filtered[df_filtered["Bidang"] == selected_bidang_dash] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                    scope_label = f"Bidang {selected_bidang_dash}"
+
+                subs_in_cat = SUBDIMENSIONS_BY_CATEGORY.get(selected_sub_category, [])
+                c_meta = CATEGORY_METADATA.get(selected_sub_category, {"label": selected_sub_category, "icon": "📁"})
+
+                if df_scope.empty:
+                    st.warning(f"Belum ada data responden untuk {scope_label}.")
+                elif subs_in_cat:
+                    chart_items, tbl_rows = collect_subdimension_items_from_df(df_scope, [selected_sub_category])
+                    fig_sub_hbar = build_subdimension_hbar_chart(
+                        chart_items,
+                        title_text=f"📊 Barchart Horizontal: {c_meta.get('label', selected_sub_category)} — {scope_label}",
+                        xaxis_title="Skor Rata-Rata Sub-Bidang (0 - 100)"
+                    )
+                    st.plotly_chart(fig_sub_hbar, use_container_width=True)
+
+                    # Tabel Rincian Data Native Streamlit
+                    st.markdown(f"**Tabel Rincian Skor ({len(subs_in_cat)} Sub-Bidang):**")
+                    st.dataframe(pd.DataFrame(tbl_rows), use_container_width=True, hide_index=True)
+                    
+
+            st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+
+            # -------------------------------------------------------------
+            # GRAFIK 4: ANALISIS KESEHATAN MENTAL SEGMEN 2 (DASS-21)
+            # -------------------------------------------------------------
+            with st.container(border=True):
+                st.markdown("#### 🌿 Analisis DASS: Kondisi Tingkat Energi dan Suasana Hati, Respons Fisik dan  tingkat Kenyamanan Situasional, & Pengelolaan Tekanan atau Ketegangan Kerja (DASS-21)")
+                st.caption("Pemantauan skor dan tingkat keparahan DASS-21 berdasarkan bidang kerja dan kategori keparahan.")
+
+                # Filter Per Bidang untuk Segmen 2
+                available_bidang_seg2 = [b for b in BIDANG_OPTIONS if "Bidang" in df_filtered.columns and b in df_filtered["Bidang"].unique()]
+                extra_b_seg2 = [b for b in df_filtered["Bidang"].dropna().unique() if b not in available_bidang_seg2] if "Bidang" in df_filtered.columns else []
+                all_b_seg2 = available_bidang_seg2 + extra_b_seg2
+
+                col_fb1, col_fb2 = st.columns([1.2, 1.8])
+                with col_fb1:
+                    selected_seg2_bidang = st.selectbox(
+                        "🏢 Filter Asal Bidang Kerja (Segmen 2):",
+                        options=["Semua Bidang"] + all_b_seg2,
+                        key="dash_seg2_bidang_filter"
+                    )
+                with col_fb2:
+                    dim_choice = st.selectbox(
+                        "📊 Pilih Dimensi untuk Distribusi Keparahan:",
+                        ["Depresi", "Kecemasan", "Stress"],
+                        key="dash_dass_dim_sel"
+                    )
+
+                # Tentukan dataset scope untuk Segmen 2
+                if selected_seg2_bidang == "Semua Bidang":
+                    df_seg2_scope = df_filtered
+                    seg2_title_suffix = "Semua Bidang"
+                else:
+                    df_seg2_scope = df_filtered[df_filtered["Bidang"] == selected_seg2_bidang] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                    seg2_title_suffix = f"Bidang {selected_seg2_bidang}"
+
+                col_dass1, col_dass2 = st.columns([3, 2])
+                with col_dass1:
+                    if selected_seg2_bidang == "Semua Bidang":
+                        # Perbandingan Rata-Rata DASS-21 per Bidang Kerja
+                        dass_comp_rows = []
+                        for b in all_b_seg2:
+                            b_df = df_filtered[df_filtered["Bidang"] == b] if "Bidang" in df_filtered.columns else pd.DataFrame()
+                            if not b_df.empty:
+                                for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
+                                    val = round(b_df[col_name].mean(), 1) if col_name in b_df.columns else 0.0
+                                    short_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
+                                    dass_comp_rows.append({"Bidang": b, "Dimensi": short_dim, "Skor": val})
+
+                        if dass_comp_rows:
+                            df_dass_comp = pd.DataFrame(dass_comp_rows)
+                            fig_dass_bidang = px.bar(
+                                df_dass_comp,
+                                x="Dimensi",
+                                y="Skor",
+                                color="Bidang",
+                                barmode="group",
+                                color_discrete_map=BIDANG_COLOR_MAP,
+                                text="Skor",
+                                title="Rata-Rata Skor DASS-21 per Bidang Kerja"
+                            )
+                            fig_dass_bidang.update_traces(
+                                texttemplate="<b>%{y:.1f}</b>",
+                                textposition="outside",
+                                cliponaxis=False
+                            )
+                            fig_dass_bidang.update_layout(
+                                yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)", gridcolor="#f1f5f9"),
+                                xaxis=dict(title=""),
+                                height=380,
+                                margin=dict(l=20, r=20, t=40, b=30),
+                                plot_bgcolor="white",
+                                paper_bgcolor="white"
+                            )
+                            st.plotly_chart(fig_dass_bidang, use_container_width=True)
+                        else:
+                            st.info("Belum ada data rekaman DASS-21.")
+                    else:
+                        # Tampilkan Skor Rata-rata 3 Dimensi untuk bidang yang dipilih
+                        single_dass_rows = []
+                        for dim, col_name in DIMENSION_COLUMNS_SEGMEN2.items():
+                            short_dim = CATEGORY_METADATA_SEGMEN2.get(dim, {}).get("short", dim)
+                            val = round(df_seg2_scope[col_name].mean(), 1) if col_name in df_seg2_scope.columns and not df_seg2_scope.empty else 0.0
+                            sev = get_dass_severity(short_dim, val)
+                            single_dass_rows.append({"Dimensi": short_dim, "Skor": val, "Kategori Keparahan": sev})
+                    
+                        if single_dass_rows:
+                            df_single_dass = pd.DataFrame(single_dass_rows)
+                            fig_dass_single = px.bar(
+                                df_single_dass,
+                                x="Dimensi",
+                                y="Skor",
+                                color="Dimensi",
+                                color_discrete_map={"Depresi": "#3b82f6", "Kecemasan": "#f59e0b", "Stress": "#ef4444"},
+                                text="Skor",
+                                title=f"Skor Rata-Rata DASS-21: {selected_seg2_bidang} ({len(df_seg2_scope)} Responden)"
+                            )
+                            fig_dass_single.update_traces(
+                                texttemplate="<b>%{y:.1f}</b>",
+                                textposition="outside",
+                                cliponaxis=False
+                            )
+                            fig_dass_single.update_layout(
+                                yaxis=dict(range=[0, 45], title="Skor Rata-Rata (0 - 42)", gridcolor="#f1f5f9"),
+                                xaxis=dict(title=""),
+                                showlegend=False,
+                                height=380,
+                                margin=dict(l=20, r=20, t=40, b=30),
+                                plot_bgcolor="white",
+                                paper_bgcolor="white"
+                            )
+                            st.plotly_chart(fig_dass_single, use_container_width=True)
+                        else:
+                            st.info(f"Belum ada data responden untuk {selected_seg2_bidang}.")
+
+                with col_dass2:
+                    # Distribusi Tingkat Keparahan Stress / Depresi / Kecemasan (berdasarkan df_seg2_scope)
+                    sev_col = f"Tingkat_{dim_choice}"
+                    if sev_col in df_seg2_scope.columns and not df_seg2_scope.empty:
+                        cat_order = ["Normal", "Ringan", "Sedang", "Berat", "Sangat Berat"]
+                        sev_series = pd.Categorical(df_seg2_scope[sev_col], categories=cat_order, ordered=True)
+                        sev_counts = sev_series.value_counts().reset_index()
+                        sev_counts.columns = ["Tingkat", "Jumlah"]
+                        sev_counts = sev_counts[sev_counts["Jumlah"] > 0]
+                        total_sev_pengisi = int(sev_counts["Jumlah"].sum())
+
+                        if not sev_counts.empty:
+                            fig_sev_pie = px.pie(
+                                sev_counts,
+                                names="Tingkat",
+                                values="Jumlah",
+                                hole=0.4,
+                                title=f"Distribusi Tingkat {dim_choice} ({seg2_title_suffix})",
+                                color="Tingkat",
+                                color_discrete_map={
+                                    "Normal": "#10b981",
+                                    "Ringan": "#3b82f6",
+                                    "Sedang": "#f59e0b",
+                                    "Berat": "#ea580c",
+                                    "Sangat Berat": "#dc2626"
+                                },
+                                category_orders={"Tingkat": cat_order}
+                            )
+                            fig_sev_pie.update_traces(
+                                textposition='inside',
+                                texttemplate="<b>%{label}</b><br>%{value} orang<br>(%{percent})",
+                                hovertemplate="<b>Tingkat %{label}</b><br>Jumlah Pengisi: <b>%{value} orang</b><br>Proporsi: <b>%{percent}</b><extra></extra>"
+                            )
+                            fig_sev_pie.update_layout(
+                                height=380,
+                                margin=dict(l=10, r=10, t=40, b=20),
+                                annotations=[dict(text=f"Total Pengisi<br><b>{total_sev_pengisi}</b>", x=0.5, y=0.5, font_size=13, showarrow=False, font=dict(color="#0f172a"))]
+                            )
+                            st.plotly_chart(fig_sev_pie, use_container_width=True)
+                        else:
+                            st.info(f"Tidak ada data tingkat {dim_choice} pada filter ini.")
+                    else:
+                        st.info(f"Belum ada data rekaman tingkat {dim_choice} Segmen 2 untuk {seg2_title_suffix}.")
+
+            st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+            # -------------------------------------------------------------
+            # TABEL DATA LENGKAP & EXPORT KE EXCEL / CSV
+            # -------------------------------------------------------------
+            with st.container(border=True):
+                st.markdown("#### 📑 Rekapitulasi Data Responden")
             
-            # Kolom ringkasan yang nyaman dibaca mencakup Segmen 1, Sub-Dimensi, dan Segmen 2
-            summary_cols = (
-                ["ID_Responden", "Status_Validitas", "Skor_Validitas", "Waktu_Pengisian", "Bidang", "Nama_Inisial", "Jenis_Kelamin", "Rentang_Usia", "Masa_Kerja", "Jabatan"]
-                + list(DIMENSION_COLUMNS.values())
-                + ["Skor_Rata_Rata_Total"]
-                + list(SUBDIMENSION_COLUMNS.values())
-                + list(DIMENSION_COLUMNS_SEGMEN2.values())
-                + ["Total_Skor_Segmen2", "Tingkat_Depresi", "Tingkat_Kecemasan", "Tingkat_Stress"]
-            )
-            available_summary_cols = [c for c in summary_cols if c in df_filtered.columns]
-
-            st.dataframe(df_filtered[available_summary_cols], use_container_width=True, height=320)
-
-            col_exp1, col_exp2 = st.columns([1, 1])
-            with col_exp1:
-                csv_bytes = df_filtered.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="📥 Unduh Data Lengkap (.CSV)",
-                    data=csv_bytes,
-                    file_name=f"Rekap_Survei_ErgoPsiko_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                    mime="text/csv",
-                    use_container_width=True
+                # Kolom ringkasan yang nyaman dibaca mencakup Segmen 1, Sub-Dimensi, dan Segmen 2
+                summary_cols = (
+                    ["ID_Responden", "Status_Validitas", "Skor_Validitas", "Waktu_Pengisian", "Bidang", "Nama_Inisial", "Jenis_Kelamin", "Rentang_Usia", "Masa_Kerja", "Jabatan"]
+                    + list(DIMENSION_COLUMNS.values())
+                    + ["Skor_Rata_Rata_Total"]
+                    + list(SUBDIMENSION_COLUMNS.values())
+                    + list(DIMENSION_COLUMNS_SEGMEN2.values())
+                    + ["Total_Skor_Segmen2", "Tingkat_Depresi", "Tingkat_Kecemasan", "Tingkat_Stress"]
                 )
+                available_summary_cols = [c for c in summary_cols if c in df_filtered.columns]
 
-            with col_exp2:
-                try:
-                    excel_bytes = convert_df_to_excel(df_filtered)
+                st.dataframe(df_filtered[available_summary_cols], use_container_width=True, height=320)
+
+                col_exp1, col_exp2 = st.columns([1, 1])
+                with col_exp1:
+                    csv_bytes = df_filtered.to_csv(index=False).encode('utf-8')
                     st.download_button(
-                        label="📥 Unduh Data Lengkap (.Excel / .XLSX)",
-                        data=excel_bytes,
-                        file_name=f"Rekap_Survei_ErgoPsiko_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        label="📥 Unduh Data Lengkap (.CSV)",
+                        data=csv_bytes,
+                        file_name=f"Rekap_Survei_ErgoPsiko_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                        mime="text/csv",
                         use_container_width=True
                     )
-                except Exception as e:
-                    st.error(f"Gagal generate file Excel: {e}")
 
-# =====================================================================
+                with col_exp2:
+                    try:
+                        excel_bytes = convert_df_to_excel(df_filtered)
+                        st.download_button(
+                            label="📥 Unduh Data Lengkap (.Excel / .XLSX)",
+                            data=excel_bytes,
+                            file_name=f"Rekap_Survei_ErgoPsiko_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"Gagal generate file Excel: {e}")
+
+    # =====================================================================
 # 6. HALAMAN 3: PENGATURAN & GOOGLE SHEETS
 # =====================================================================
 elif menu == "⚙️ Konfigurasi Spreadsheet":
