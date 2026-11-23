@@ -7,6 +7,7 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 from scoring_map import (
     BIDANG_OPTIONS,
+    JABATAN_OPTIONS,
     SURVEY_QUESTIONS,
     DIMENSION_COLUMNS,
     CATEGORY_METADATA,
@@ -63,7 +64,7 @@ def generate_sample_data(num_samples=24):
     genders = ["Laki-laki", "Perempuan"]
     age_groups = ["< 25 tahun", "25 - 34 tahun", "35 - 44 tahun", "45 - 54 tahun", "≥ 55 tahun"]
     tenures = ["< 1 tahun", "1 - 3 tahun", "4 - 10 tahun", "> 10 tahun"]
-    positions = ["Staf Pelaksana", "Pengawas / Koordinator", "Fungsional Ahli", "Manajemen / Struktural"]
+    positions = JABATAN_OPTIONS
     names = [
         "Responden A", "Responden B", "Responden C", "Responden D", "Responden E",
         "Responden F", "Responden G", "Responden H", "Responden I", "Responden J",

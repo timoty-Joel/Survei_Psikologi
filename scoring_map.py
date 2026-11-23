@@ -53,6 +53,14 @@ def calculate_score(code, answer):
 
 BIDANG_OPTIONS = ["Keselamatan Kerja", "Kesehatan Kerja", "Ergonomi & Psikologi", "Hiegene Industri dan Bahan Berbahaya", "Tata Usaha"]
 
+JABATAN_OPTIONS = [
+    "Pengawas Ketenagakerjaan",
+    "Penguji K3",
+    "Pelaksana",
+    "Struktural (Direktur, KaTim, WaKaTim, Kasubag TU)",
+    "Lainnya"
+]
+
 # questions
 SURVEY_QUESTIONS = {
     "TUNTUTAN PEKERJAAN": [     
