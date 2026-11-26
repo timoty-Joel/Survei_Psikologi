@@ -655,8 +655,9 @@ def dialog_top_unfavorable(sub_name, sub_score, df_scope):
     st.markdown("#### 🏢 Bidang Kerja Paling Terbebani oleh Aspek Ini")
     col_s = SUBDIMENSION_COLUMNS.get(sub_name)
     if col_s and col_s in df_scope.columns and "Bidang" in df_scope.columns:
-        b_df = df_scope.groupby("Bidang")[col_s].mean().reset_index().sort_values(by="Skor", ascending=False)
+        b_df = df_scope.groupby("Bidang")[col_s].mean().reset_index()
         b_df.columns = ["Bidang", "Skor"]
+        b_df = b_df.sort_values(by="Skor", ascending=False)
         b_df["Skor"] = b_df["Skor"].round(1)
         fig_b = px.bar(
             b_df, x="Bidang", y="Skor", color="Bidang", color_discrete_map=BIDANG_COLOR_MAP, text="Skor"
